@@ -1,0 +1,127 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", var(--font-sans);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Premium NGO Color Palette */
+  --color-forest: #0B5D3B;
+  --color-forest-light: #127E51;
+  --color-forest-dark: #074028;
+  --color-gold: #C99A32;
+  --color-gold-light: #E0AE43;
+  --color-gold-dark: #A17B24;
+  --color-slate-gray: #475569;
+  --color-soft-bg: #F8FAFC;
+}
+
+/* Page transitions and scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom shadow classes for soft elevations */
+.shadow-soft-elevation {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+}
+
+.shadow-soft-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.shadow-soft-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(11, 93, 59, 0.06);
+}
+
+/* Glassmorphism helpers */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-effect-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* High Contrast mode overrides */
+.high-contrast {
+  --color-soft-bg: #FFFFFF;
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+}
+
+.high-contrast * {
+  border-color: #FFFFFF !important;
+}
+
+.high-contrast a, .high-contrast button {
+  text-decoration: underline !important;
+}
+
+.high-contrast .text-slate-gray {
+  color: #E2E8F0 !important;
+}
+
+.high-contrast .bg-forest {
+  background-color: #000000 !important;
+  border: 2px solid #FFFFFF !important;
+}
+
+.high-contrast .bg-gold {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast .text-forest {
+  color: #FFFFFF !important;
+}
+
+.high-contrast .text-gold {
+  color: #FFFF00 !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Infinite Auto-Scroll Carousel for Corporate Partners */
+@keyframes infinite-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-infinite-scroll {
+  display: flex;
+  width: max-content;
+  animation: infinite-scroll 30s linear infinite;
+}
+
+.animate-infinite-scroll:hover {
+  animation-play-state: paused;
+}
