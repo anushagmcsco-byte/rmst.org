@@ -139,6 +139,18 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
   const [programList, setProgramList] = useState(PROGRAM_PIPELINE);
   const [volunteerList, setVolunteerList] = useState(VOLUNTEER_APPLICATIONS);
 
+  // Helper to map program title to a valid dynamic route slug
+  const getProgramSlug = (title: string): string => {
+    const t = title.toLowerCase();
+    if (t.includes('agri') || t.includes('solar drip') || t.includes('irrigation')) return 'sustainable-agriculture';
+    if (t.includes('women') || t.includes('dairy') || t.includes('coop') || t.includes('shg')) return 'women-empowerment';
+    if (t.includes('python') || t.includes('stem') || t.includes('classroom') || t.includes('school') || t.includes('education') || t.includes('coding') || t.includes('girls')) return 'education-ai-skills';
+    if (t.includes('health') || t.includes('nutrition') || t.includes('clinic') || t.includes('pediatric')) return 'health-nutrition';
+    if (t.includes('rainwater') || t.includes('watershed') || t.includes('bunds') || t.includes('climate')) return 'climate-action';
+    if (t.includes('entrepreneurship') || t.includes('start-ups') || t.includes('rural')) return 'rural-entrepreneurship';
+    return 'sustainable-agriculture';
+  };
+
   // Dynamic Blogs, Events and Gallery state
   const [blogsList, setBlogsList] = useState<any[]>(() => {
     const saved = localStorage.getItem('raita_mitra_blogs_list');
@@ -186,7 +198,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     topic: 'Agriculture',
     content: '',
     author: '',
-    authorRole: ''
+    authorRole: '',
+    image: '',
+    imageName: '',
+    video: '',
+    videoName: ''
   });
 
   const [editingEvent, setEditingEvent] = useState<any | null>(null);
@@ -203,7 +219,10 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     totalSeats: 50,
     image: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600',
     description: '',
-    detailedInfo: ''
+    detailedInfo: '',
+    imageName: '',
+    video: '',
+    videoName: ''
   });
 
   const [editingGallery, setEditingGallery] = useState<any | null>(null);
@@ -214,7 +233,72 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     tag1: 'Agriculture',
     tag2: 'Haveri',
     type: 'Image',
-    size: '1.8 MB'
+    size: '1.8 MB',
+    imageName: '',
+    videoName: ''
+  });
+
+  // CMS page states
+  const [editingCms, setEditingCms] = useState<any | null>(null);
+  const [isCreatingCms, setIsCreatingCms] = useState<boolean>(false);
+  const [newCmsForm, setNewCmsForm] = useState({
+    title: '',
+    url: '',
+    author: '',
+    status: 'Draft',
+    image: '',
+    imageName: '',
+    video: '',
+    videoName: ''
+  });
+
+  // Programs states
+  const [editingProgram, setEditingProgram] = useState<any | null>(null);
+  const [isCreatingProgram, setIsCreatingProgram] = useState<boolean>(false);
+  const [newProgramForm, setNewProgramForm] = useState({
+    title: '',
+    manager: '',
+    region: '',
+    status: 'In Progress',
+    budget: 500000,
+    beneficiaries: 1000,
+    progress: 50,
+    image: '',
+    imageName: '',
+    video: '',
+    videoName: ''
+  });
+
+  // CRM states
+  const [editingDonor, setEditingDonor] = useState<any | null>(null);
+  const [isCreatingDonor, setIsCreatingDonor] = useState<boolean>(false);
+  const [newDonorForm, setNewDonorForm] = useState({
+    name: '',
+    email: '',
+    segment: 'Corporate CSR',
+    totalGiving: 10000,
+    engagements: 5,
+    recommended: 'Solar Pump Grid II',
+    status: 'Active Recurring',
+    image: '',
+    imageName: '',
+    video: '',
+    videoName: ''
+  });
+
+  // Volunteer states
+  const [editingVolunteer, setEditingVolunteer] = useState<any | null>(null);
+  const [isCreatingVolunteer, setIsCreatingVolunteer] = useState<boolean>(false);
+  const [newVolunteerForm, setNewVolunteerForm] = useState({
+    name: '',
+    skill: '',
+    location: '',
+    status: 'Assigned',
+    hours: 10,
+    image: '',
+    imageName: '',
+    video: '',
+    videoName: ''
   });
   
   // Search state variables
@@ -769,7 +853,20 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                       <p className="text-xs text-slate-400">Manipulate active website routing definitions, manage story drafts, and draft compliance files.</p>
                     </div>
                     <button
-                      onClick={createCmsDraft}
+                      onClick={() => {
+                        setIsCreatingCms(true);
+                        setEditingCms(null);
+                        setNewCmsForm({
+                          title: '',
+                          url: '',
+                          author: adminUser.name,
+                          status: 'Draft',
+                          image: '',
+                          imageName: '',
+                          video: '',
+                          videoName: ''
+                        });
+                      }}
                       className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
                     >
                       <PlusCircle size={14} />
@@ -777,52 +874,266 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                     </button>
                   </div>
 
-                  {/* CMS Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs font-mono">
-                      <thead>
-                        <tr className="border-b text-slate-400 uppercase text-[10px] font-bold bg-slate-50">
-                          <th className="py-3 px-4 text-left">Page Node ID</th>
-                          <th className="py-3 px-4 text-left">Public Route URI</th>
-                          <th className="py-3 px-4 text-left">Primary Editor</th>
-                          <th className="py-3 px-4 text-left">Status</th>
-                          <th className="py-3 px-4 text-left">Updated</th>
-                          <th className="py-3 px-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-150">
-                        {cmsList.map(page => (
-                          <tr key={page.id} className="hover:bg-slate-50/50">
-                            <td className="py-3.5 px-4 font-bold text-slate-800">{page.title}</td>
-                            <td className="py-3.5 px-4 text-slate-500">{page.url}</td>
-                            <td className="py-3.5 px-4 text-slate-500">{page.author}</td>
-                            <td className="py-3.5 px-4">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                                page.status === 'Published' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                              }`}>
-                                {page.status}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-400">{page.updated}</td>
-                            <td className="py-3.5 px-4 text-right space-x-1">
-                              <button
-                                onClick={() => alert(`Redirecting to live editor view for page route: ${page.url}`)}
-                                className="px-2 py-1 bg-slate-50 text-slate-600 rounded border hover:bg-slate-100 cursor-pointer text-[10px]"
-                              >
-                                Edit Draft
-                              </button>
-                              <button
-                                onClick={() => deleteCmsPage(page.id)}
-                                className="px-2 py-1 bg-rose-50 text-rose-600 rounded border border-rose-200 hover:bg-rose-100 cursor-pointer text-[10px]"
-                              >
-                                Delete
-                              </button>
-                            </td>
+                  {(isCreatingCms || editingCms) ? (
+                    <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 text-xs animate-fade-in font-sans">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                        <h4 className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                          <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+                          <span>{isCreatingCms ? 'Draft New CMS Page' : 'Edit CMS Page Node'}</span>
+                        </h4>
+                        <button
+                          onClick={() => {
+                            setIsCreatingCms(false);
+                            setEditingCms(null);
+                          }}
+                          className="px-2 py-1 bg-white hover:bg-slate-100 border text-slate-500 rounded font-mono text-[10px] cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Page Node Title</label>
+                            <input
+                              type="text"
+                              value={isCreatingCms ? newCmsForm.title : editingCms.title}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (isCreatingCms) {
+                                  setNewCmsForm({ ...newCmsForm, title: val, url: `/${val.toLowerCase().replace(/\s+/g, '-')}` });
+                                } else {
+                                  setEditingCms({ ...editingCms, title: val, url: `/${val.toLowerCase().replace(/\s+/g, '-')}` });
+                                }
+                              }}
+                              className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                              placeholder="e.g., Agrarian Soil Micro-Grids"
+                            />
+                          </div>
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Public Route URI</label>
+                            <input
+                              type="text"
+                              value={isCreatingCms ? newCmsForm.url : editingCms.url}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (isCreatingCms) {
+                                  setNewCmsForm({ ...newCmsForm, url: val });
+                                } else {
+                                  setEditingCms({ ...editingCms, url: val });
+                                }
+                              }}
+                              className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-mono"
+                              placeholder="e.g., /soil-grids"
+                            />
+                          </div>
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Primary Editor / Author</label>
+                            <input
+                              type="text"
+                              value={isCreatingCms ? newCmsForm.author : editingCms.author}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (isCreatingCms) {
+                                  setNewCmsForm({ ...newCmsForm, author: val });
+                                } else {
+                                  setEditingCms({ ...editingCms, author: val });
+                                }
+                              }}
+                              className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Page Status</label>
+                            <select
+                              value={isCreatingCms ? newCmsForm.status : editingCms.status}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (isCreatingCms) {
+                                  setNewCmsForm({ ...newCmsForm, status: val });
+                                } else {
+                                  setEditingCms({ ...editingCms, status: val });
+                                }
+                              }}
+                              className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                            >
+                              <option value="Draft">Draft Mode</option>
+                              <option value="Published">Published Live</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider font-mono">Upload CMS Page Assets</label>
+                            <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">IMAGE FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-indigo-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingCms) {
+                                          setNewCmsForm({ ...newCmsForm, image: fakeUrl, imageName: file.name });
+                                        } else {
+                                          setEditingCms({ ...editingCms, image: fakeUrl, imageName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <ImageIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingCms ? newCmsForm.imageName : editingCms.imageName) || 'Choose Image'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">VIDEO FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-indigo-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="video/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingCms) {
+                                          setNewCmsForm({ ...newCmsForm, video: fakeUrl, videoName: file.name });
+                                        } else {
+                                          setEditingCms({ ...editingCms, video: fakeUrl, videoName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <Video className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingCms ? newCmsForm.videoName : editingCms.videoName) || 'Choose Video'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Visual Asset Previews */}
+                            <div className="mt-2 flex gap-2">
+                              {(isCreatingCms ? newCmsForm.image : editingCms.image) && (
+                                <div className="flex items-center gap-1.5 bg-indigo-50/50 p-1 rounded border text-[9px] text-indigo-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Image Selected</span>
+                                </div>
+                              )}
+                              {(isCreatingCms ? newCmsForm.video : editingCms.video) && (
+                                <div className="flex items-center gap-1.5 bg-indigo-50/50 p-1 rounded border text-[9px] text-indigo-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Video Selected</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-3 border-t font-mono">
+                        <button
+                          onClick={() => {
+                            setIsCreatingCms(false);
+                            setEditingCms(null);
+                          }}
+                          className="px-4 py-2 border rounded-xl hover:bg-slate-100 text-slate-600 text-xs font-bold cursor-pointer"
+                        >
+                          CANCEL
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (isCreatingCms) {
+                              const newPage = {
+                                id: `pg_new_${Date.now()}`,
+                                title: newCmsForm.title || 'Untitled Node',
+                                url: newCmsForm.url || '/untitled-node',
+                                author: newCmsForm.author || adminUser.name,
+                                status: newCmsForm.status,
+                                updated: new Date().toISOString().split('T')[0],
+                                version: 'v1.0 (Draft)',
+                                image: newCmsForm.image,
+                                video: newCmsForm.video
+                              };
+                              setCmsList([...cmsList, newPage]);
+                              setIsCreatingCms(false);
+                            } else {
+                              const updated = cmsList.map(p => p.id === editingCms.id ? editingCms : p);
+                              setCmsList(updated);
+                              setEditingCms(null);
+                            }
+                          }}
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+                        >
+                          {isCreatingCms ? 'PUBLISH PAGE DRAFT' : 'SAVE CMS CHANGES'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto font-sans">
+                      <table className="w-full text-xs font-mono">
+                        <thead>
+                          <tr className="border-b text-slate-400 uppercase text-[10px] font-bold bg-slate-50">
+                            <th className="py-3 px-4 text-left">Page Node ID</th>
+                            <th className="py-3 px-4 text-left">Public Route URI</th>
+                            <th className="py-3 px-4 text-left">Primary Editor</th>
+                            <th className="py-3 px-4 text-left">Status</th>
+                            <th className="py-3 px-4 text-left">Updated</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-slate-150">
+                          {cmsList.map(page => (
+                            <tr key={page.id} className="hover:bg-slate-50/50">
+                              <td className="py-3.5 px-4 font-bold text-slate-800">{page.title}</td>
+                              <td className="py-3.5 px-4 text-slate-500">{page.url}</td>
+                              <td className="py-3.5 px-4 text-slate-500">{page.author}</td>
+                              <td className="py-3.5 px-4">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                  page.status === 'Published' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                }`}>
+                                  {page.status}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-400">{page.updated}</td>
+                              <td className="py-3.5 px-4 text-right space-x-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingCms(page);
+                                    setIsCreatingCms(false);
+                                  }}
+                                  className="px-2 py-1 bg-slate-50 text-slate-600 rounded border hover:bg-slate-100 cursor-pointer text-[10px]"
+                                >
+                                  Edit Draft
+                                </button>
+                                <button
+                                  onClick={() => setActivePage?.(page.url.replace(/^\//, ''))}
+                                  className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded border border-emerald-200 cursor-pointer text-[10px] inline-flex items-center gap-1"
+                                >
+                                  <ExternalLink size={10} />
+                                  <span>Go Live</span>
+                                </button>
+                                <button
+                                  onClick={() => deleteCmsPage(page.id)}
+                                  className="px-2 py-1 bg-rose-50 text-rose-600 rounded border border-rose-200 hover:bg-rose-100 cursor-pointer text-[10px]"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
                   {/* Media Library component */}
                   <div className="pt-6 border-t border-slate-100 space-y-4">
@@ -965,6 +1276,77 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                               placeholder="Write a brief 1-2 sentence overview of the piece."
                             />
                           </div>
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider font-mono">Article Cover Assets</label>
+                            <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">UPLOAD IMAGE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-indigo-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingBlog) {
+                                          setNewBlogForm({ ...newBlogForm, image: fakeUrl, imageName: file.name });
+                                        } else {
+                                          setEditingBlog({ ...editingBlog, image: fakeUrl, imageName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <ImageIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingBlog ? newBlogForm.imageName : editingBlog.imageName) || 'Choose Image'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">UPLOAD VIDEO</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-indigo-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="video/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingBlog) {
+                                          setNewBlogForm({ ...newBlogForm, video: fakeUrl, videoName: file.name });
+                                        } else {
+                                          setEditingBlog({ ...editingBlog, video: fakeUrl, videoName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <Video className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingBlog ? newBlogForm.videoName : editingBlog.videoName) || 'Choose Video'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Visual Asset Previews */}
+                            <div className="mt-2 flex gap-2">
+                              {(isCreatingBlog ? newBlogForm.image : editingBlog.image) && (
+                                <div className="flex items-center gap-1.5 bg-indigo-50/50 p-1 rounded border text-[9px] text-indigo-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Image Selected</span>
+                                </div>
+                              )}
+                              {(isCreatingBlog ? newBlogForm.video : editingBlog.video) && (
+                                <div className="flex items-center gap-1.5 bg-indigo-50/50 p-1 rounded border text-[9px] text-indigo-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Video Selected</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         <div className="space-y-3">
@@ -1051,7 +1433,9 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                 authorRole: newBlogForm.authorRole || adminUser.role,
                                 updatedDate: new Date().toISOString().split('T')[0],
                                 viewsCount: 15,
-                                content: newBlogForm.content || 'Actionable content details for our clusters.'
+                                content: newBlogForm.content || 'Actionable content details for our clusters.',
+                                image: newBlogForm.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=800',
+                                video: newBlogForm.video || ''
                               };
                               setBlogsList([newBlog, ...blogsList]);
                               setIsCreatingBlog(false);
@@ -1375,6 +1759,77 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                             />
                           </div>
                           <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider font-mono">Upload Event Cover Assets</label>
+                            <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">IMAGE FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-emerald-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingEvent) {
+                                          setNewEventForm({ ...newEventForm, image: fakeUrl, imageName: file.name });
+                                        } else {
+                                          setEditingEvent({ ...editingEvent, image: fakeUrl, imageName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <ImageIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingEvent ? newEventForm.imageName : editingEvent.imageName) || 'Choose Image'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">VIDEO FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-emerald-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="video/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingEvent) {
+                                          setNewEventForm({ ...newEventForm, video: fakeUrl, videoName: file.name });
+                                        } else {
+                                          setEditingEvent({ ...editingEvent, video: fakeUrl, videoName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <Video className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingEvent ? newEventForm.videoName : editingEvent.videoName) || 'Choose Video'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Visual Asset Previews */}
+                            <div className="mt-2 flex gap-2">
+                              {(isCreatingEvent ? newEventForm.image : editingEvent.image) && (
+                                <div className="flex items-center gap-1.5 bg-emerald-50/50 p-1 rounded border text-[9px] text-emerald-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Image Selected</span>
+                                </div>
+                              )}
+                              {(isCreatingEvent ? newEventForm.video : editingEvent.video) && (
+                                <div className="flex items-center gap-1.5 bg-emerald-50/50 p-1 rounded border text-[9px] text-emerald-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Video Selected</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div>
                             <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Brief Summary</label>
                             <textarea
                               value={isCreatingEvent ? newEventForm.description : editingEvent.description}
@@ -1439,6 +1894,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                 seatsRemaining: newEventForm.seatsRemaining,
                                 totalSeats: newEventForm.totalSeats,
                                 image: newEventForm.image,
+                                video: newEventForm.video || '',
                                 status: newEventForm.status,
                                 description: newEventForm.description || 'Interactive campaign drive.',
                                 detailedInfo: newEventForm.detailedInfo || 'Full description of scheduled agenda.',
@@ -1632,6 +2088,71 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                               className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-mono"
                               placeholder="https://images.unsplash.com/photo-..."
                             />
+                          </div>
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider font-mono">Upload Media Files</label>
+                            <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">IMAGE FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-amber-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingGallery) {
+                                          setNewGalleryForm({ ...newGalleryForm, url: fakeUrl, imageName: file.name, type: 'Image' });
+                                        } else {
+                                          setEditingGallery({ ...editingGallery, url: fakeUrl, imageName: file.name, type: 'Image' });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <ImageIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingGallery ? newGalleryForm.imageName : editingGallery.imageName) || 'Choose Image'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">VIDEO FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-amber-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="video/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingGallery) {
+                                          setNewGalleryForm({ ...newGalleryForm, url: fakeUrl, videoName: file.name, type: 'Video' });
+                                        } else {
+                                          setEditingGallery({ ...editingGallery, url: fakeUrl, videoName: file.name, type: 'Video' });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <Video className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingGallery ? newGalleryForm.videoName : editingGallery.videoName) || 'Choose Video'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Visual Asset Previews */}
+                            <div className="mt-2 flex gap-2">
+                              {(isCreatingGallery ? newGalleryForm.url : editingGallery.url) && (
+                                <div className="flex items-center gap-1.5 bg-amber-50/50 p-1 rounded border text-[9px] text-amber-700">
+                                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                                  <span>Media Selected ({(isCreatingGallery ? newGalleryForm.type : (editingGallery.type || 'Image'))})</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
@@ -1928,11 +2449,80 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                 />
                               </div>
 
+                              <div>
+                                <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">Upload SEO Assets</label>
+                                <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                                  <div>
+                                    <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">IMAGE FILE</span>
+                                    <div className="relative border border-dashed border-slate-200 hover:border-amber-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                      <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            const fakeUrl = URL.createObjectURL(file);
+                                            if (setSeoConfig && seoConfig) {
+                                              setSeoConfig({
+                                                ...seoConfig,
+                                                [pageKey]: {
+                                                  ...details,
+                                                  futureImage: fakeUrl,
+                                                  imageName: file.name
+                                                }
+                                              });
+                                            }
+                                          }
+                                        }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                      />
+                                      <ImageIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                      <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                        {(details as any).imageName || 'Choose Image'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">VIDEO FILE</span>
+                                    <div className="relative border border-dashed border-slate-200 hover:border-amber-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                      <input 
+                                        type="file" 
+                                        accept="video/*"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            const fakeUrl = URL.createObjectURL(file);
+                                            if (setSeoConfig && seoConfig) {
+                                              setSeoConfig({
+                                                ...seoConfig,
+                                                [pageKey]: {
+                                                  ...details,
+                                                  futureVideo: fakeUrl,
+                                                  videoName: file.name
+                                                }
+                                              });
+                                            }
+                                          }
+                                        }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                      />
+                                      <Video className="w-4 h-4 text-slate-400 mb-0.5" />
+                                      <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                        {(details as any).videoName || 'Choose Video'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
                               <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200">
                                 <img src={details.futureImage} alt="Future Image Preview" className="w-12 h-12 object-cover rounded-lg border bg-slate-100" referrerPolicy="no-referrer" />
                                 <div className="text-left font-mono">
                                   <div className="text-[9px] font-bold text-slate-500">IMAGE PREVIEW</div>
                                   <div className="text-[8px] text-slate-400 truncate max-w-[200px]">{details.futureImage}</div>
+                                  {(details as any).videoName && (
+                                    <div className="text-[8px] text-emerald-600 font-bold mt-1">✓ Video: {(details as any).videoName}</div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1946,64 +2536,372 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
               {/* TAB 3: PROGRAM MANAGEMENT KANBAN */}
               {currentAdminTab === 'programs' && (
-                <div className="space-y-6 animate-fade-in">
+                <div className="space-y-6 animate-fade-in font-sans text-left">
                   <div className="flex justify-between items-center pb-4 border-b">
                     <div>
                       <h3 className="text-base font-extrabold font-display text-slate-900">Program Management Lifecycle</h3>
                       <p className="text-xs text-slate-400">Track taluk milestones, direct beneficiary statistics, and GIS coordinates.</p>
                     </div>
+                    <button
+                      onClick={() => {
+                        setIsCreatingProgram(true);
+                        setEditingProgram(null);
+                        setNewProgramForm({
+                          title: '',
+                          manager: '',
+                          region: '',
+                          status: 'In Progress',
+                          budget: 500000,
+                          beneficiaries: 1000,
+                          progress: 50,
+                          image: '',
+                          imageName: '',
+                          video: '',
+                          videoName: ''
+                        });
+                      }}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <PlusCircle size={14} />
+                      <span>ADD NEW PROGRAM</span>
+                    </button>
                   </div>
 
-                  {/* Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {['In Planning', 'In Progress', 'Completed'].map(col => (
-                      <div key={col} className="p-4 bg-slate-100 rounded-3xl space-y-4 text-left min-h-[400px]">
-                        <h4 className="text-xs font-bold font-mono text-slate-500 uppercase tracking-wider flex justify-between">
-                          <span>{col}</span>
-                          <span className="px-2 py-0.2 bg-white text-slate-600 rounded font-bold">
-                            {programList.filter(p => p.status === col).length}
-                          </span>
+                  {(isCreatingProgram || editingProgram) ? (
+                    <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 text-xs animate-fade-in font-sans">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                        <h4 className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                          <span>{isCreatingProgram ? 'Initiate New Program' : 'Edit Program Details'}</span>
                         </h4>
+                        <button
+                          onClick={() => {
+                            setIsCreatingProgram(false);
+                            setEditingProgram(null);
+                          }}
+                          className="px-2 py-1 bg-white hover:bg-slate-100 border text-slate-500 rounded font-mono text-[10px] cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Program Title</label>
+                            <input
+                              type="text"
+                              value={isCreatingProgram ? newProgramForm.title : editingProgram.title}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (isCreatingProgram) {
+                                  setNewProgramForm({ ...newProgramForm, title: val });
+                                } else {
+                                  setEditingProgram({ ...editingProgram, title: val });
+                                }
+                              }}
+                              className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                              placeholder="e.g., Savanur Rainwater Catchment"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Region / Taluk</label>
+                              <input
+                                type="text"
+                                value={isCreatingProgram ? newProgramForm.region : editingProgram.region}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (isCreatingProgram) {
+                                    setNewProgramForm({ ...newProgramForm, region: val });
+                                  } else {
+                                    setEditingProgram({ ...editingProgram, region: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                                placeholder="e.g., Savanur"
+                              />
+                            </div>
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Lead Manager</label>
+                              <input
+                                type="text"
+                                value={isCreatingProgram ? newProgramForm.manager : editingProgram.manager}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (isCreatingProgram) {
+                                    setNewProgramForm({ ...newProgramForm, manager: val });
+                                  } else {
+                                    setEditingProgram({ ...editingProgram, manager: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                                placeholder="e.g., Dr. Patil"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Outlay Budget (₹)</label>
+                              <input
+                                type="number"
+                                value={isCreatingProgram ? newProgramForm.budget : editingProgram.budget}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  if (isCreatingProgram) {
+                                    setNewProgramForm({ ...newProgramForm, budget: val });
+                                  } else {
+                                    setEditingProgram({ ...editingProgram, budget: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Beneficiaries</label>
+                              <input
+                                type="number"
+                                value={isCreatingProgram ? newProgramForm.beneficiaries : editingProgram.beneficiaries}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  if (isCreatingProgram) {
+                                    setNewProgramForm({ ...newProgramForm, beneficiaries: val });
+                                  } else {
+                                    setEditingProgram({ ...editingProgram, beneficiaries: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Progress %</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={isCreatingProgram ? newProgramForm.progress : editingProgram.progress}
+                                onChange={(e) => {
+                                  const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                  if (isCreatingProgram) {
+                                    setNewProgramForm({ ...newProgramForm, progress: val });
+                                  } else {
+                                    setEditingProgram({ ...editingProgram, progress: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-mono"
+                              />
+                            </div>
+                          </div>
+                        </div>
 
                         <div className="space-y-3">
-                          {programList.filter(p => p.status === col).map(p => (
-                            <div key={p.id} className="p-4 bg-white border rounded-2xl space-y-3 shadow-sm">
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Lifecycle Status</label>
+                            <select
+                              value={isCreatingProgram ? newProgramForm.status : editingProgram.status}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (isCreatingProgram) {
+                                  setNewProgramForm({ ...newProgramForm, status: val });
+                                } else {
+                                  setEditingProgram({ ...editingProgram, status: val });
+                                }
+                              }}
+                              className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                            >
+                              <option value="In Planning">In Planning</option>
+                              <option value="In Progress">In Progress</option>
+                              <option value="Completed">Completed</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider font-mono">Upload Program Media Cover</label>
+                            <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200">
                               <div>
-                                <h5 className="text-xs font-black text-slate-800">{p.title}</h5>
-                                <p className="text-[10px] text-slate-400 font-mono">Region: {p.region} • Leader: {p.manager}</p>
-                              </div>
-
-                              <div className="space-y-1 font-mono text-[9px]">
-                                <div className="flex justify-between text-slate-500">
-                                  <span>Outlay Budget:</span>
-                                  <strong className="text-slate-800">₹{p.budget.toLocaleString()}</strong>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">IMAGE FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-emerald-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingProgram) {
+                                          setNewProgramForm({ ...newProgramForm, image: fakeUrl, imageName: file.name });
+                                        } else {
+                                          setEditingProgram({ ...editingProgram, image: fakeUrl, imageName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <ImageIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingProgram ? newProgramForm.imageName : editingProgram.imageName) || 'Choose Image'}
+                                  </span>
                                 </div>
-                                <div className="flex justify-between text-slate-500">
-                                  <span>Beneficiaries:</span>
-                                  <strong className="text-slate-800">{p.beneficiaries}+</strong>
+                              </div>
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">VIDEO FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-emerald-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="video/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingProgram) {
+                                          setNewProgramForm({ ...newProgramForm, video: fakeUrl, videoName: file.name });
+                                        } else {
+                                          setEditingProgram({ ...editingProgram, video: fakeUrl, videoName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <Video className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingProgram ? newProgramForm.videoName : editingProgram.videoName) || 'Choose Video'}
+                                  </span>
                                 </div>
-                              </div>
-
-                              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                <div className="bg-emerald-600 h-full" style={{ width: `${p.progress}%` }} />
-                              </div>
-
-                              <div className="flex justify-between text-[9px] font-mono">
-                                <span className="text-emerald-700">✓ {p.progress}% Completed</span>
-                                <button 
-                                  onClick={() => alert(`Opening programmatic ledger controls for: ${p.title}`)}
-                                  className="text-amber-600 font-bold hover:underline"
-                                >
-                                  Open ledger
-                                </button>
                               </div>
                             </div>
-                          ))}
+                            
+                            {/* Previews */}
+                            <div className="mt-2 flex gap-2">
+                              {(isCreatingProgram ? newProgramForm.image : editingProgram.image) && (
+                                <div className="flex items-center gap-1.5 bg-emerald-50/50 p-1 rounded border text-[9px] text-emerald-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Image Selected</span>
+                                </div>
+                              )}
+                              {(isCreatingProgram ? newProgramForm.video : editingProgram.video) && (
+                                <div className="flex items-center gap-1.5 bg-emerald-50/50 p-1 rounded border text-[9px] text-emerald-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Video Selected</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
 
+                      <div className="flex justify-end gap-2 pt-3 border-t font-mono">
+                        <button
+                          onClick={() => {
+                            setIsCreatingProgram(false);
+                            setEditingProgram(null);
+                          }}
+                          className="px-4 py-2 border rounded-xl hover:bg-slate-100 text-slate-600 text-xs font-bold cursor-pointer"
+                        >
+                          CANCEL
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (isCreatingProgram) {
+                              const newProg = {
+                                id: `prog_new_${Date.now()}`,
+                                title: newProgramForm.title || 'Untitled Program',
+                                region: newProgramForm.region || 'Haveri',
+                                manager: newProgramForm.manager || 'Dr. Patil',
+                                status: newProgramForm.status,
+                                budget: newProgramForm.budget,
+                                beneficiaries: newProgramForm.beneficiaries,
+                                progress: newProgramForm.progress,
+                                image: newProgramForm.image,
+                                video: newProgramForm.video
+                              };
+                              setProgramList([newProg, ...programList]);
+                              setIsCreatingProgram(false);
+                            } else {
+                              const updated = programList.map(p => p.id === editingProgram.id ? editingProgram : p);
+                              setProgramList(updated);
+                              setEditingProgram(null);
+                            }
+                          }}
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+                        >
+                          {isCreatingProgram ? 'CREATE PROGRAM' : 'SAVE CHANGES'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Grid Kanban board with controls */
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {['In Planning', 'In Progress', 'Completed'].map(col => (
+                        <div key={col} className="p-4 bg-slate-100 rounded-3xl space-y-4 text-left min-h-[400px]">
+                          <h4 className="text-xs font-bold font-mono text-slate-500 uppercase tracking-wider flex justify-between">
+                            <span>{col}</span>
+                            <span className="px-2 py-0.2 bg-white text-slate-600 rounded font-bold">
+                              {programList.filter(p => p.status === col).length}
+                            </span>
+                          </h4>
+
+                          <div className="space-y-3">
+                            {programList.filter(p => p.status === col).map(p => (
+                              <div key={p.id} className="p-4 bg-white border rounded-2xl space-y-3 shadow-sm">
+                                <div>
+                                  <h5 className="text-xs font-black text-slate-800">{p.title}</h5>
+                                  <p className="text-[10px] text-slate-400 font-mono">Region: {p.region} • Leader: {p.manager}</p>
+                                </div>
+
+                                <div className="space-y-1 font-mono text-[9px]">
+                                  <div className="flex justify-between text-slate-500">
+                                    <span>Outlay Budget:</span>
+                                    <strong className="text-slate-800 font-bold">₹{p.budget?.toLocaleString('en-IN')}</strong>
+                                  </div>
+                                  <div className="flex justify-between text-slate-500">
+                                    <span>Beneficiaries:</span>
+                                    <strong className="text-slate-800 font-bold">{p.beneficiaries}+</strong>
+                                  </div>
+                                </div>
+
+                                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                  <div className="bg-emerald-600 h-full" style={{ width: `${p.progress}%` }} />
+                                </div>
+
+                                <div className="flex justify-between items-center text-[9px] font-mono">
+                                  <span className="text-emerald-700">✓ {p.progress}% Completed</span>
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={() => {
+                                        setEditingProgram(p);
+                                        setIsCreatingProgram(false);
+                                      }}
+                                      className="text-amber-600 font-bold hover:underline cursor-pointer"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        const slug = getProgramSlug(p.title);
+                                        setActivePage?.(`programs/${slug}`);
+                                      }}
+                                      className="text-emerald-600 font-bold hover:underline cursor-pointer"
+                                    >
+                                      Go Live
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        if (confirm('Delete this program?')) {
+                                          setProgramList(programList.filter(item => item.id !== p.id));
+                                        }
+                                      }}
+                                      className="text-rose-500 font-bold hover:underline cursor-pointer"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2016,7 +2914,31 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                       <p className="text-xs text-slate-400">Analyze cumulative giving histories, segments, engagement index values, and AI recommendations.</p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
+                    <div className="flex flex-wrap gap-2 items-center w-full md:w-auto font-mono">
+                      <button
+                        onClick={() => {
+                          setIsCreatingDonor(true);
+                          setEditingDonor(null);
+                          setNewDonorForm({
+                            name: '',
+                            email: '',
+                            segment: 'Corporate CSR',
+                            totalGiving: 100000,
+                            engagements: 90,
+                            recommended: 'Solar Pump Grid II',
+                            status: 'Active Recurring',
+                            image: '',
+                            imageName: '',
+                            video: '',
+                            videoName: ''
+                          });
+                        }}
+                        className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <PlusCircle size={12} />
+                        <span>ADD DONOR</span>
+                      </button>
+
                       <div className="relative flex-1 md:w-48">
                         <Search size={12} className="absolute left-3 top-2.5 text-slate-400" />
                         <input
@@ -2041,49 +2963,314 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                     </div>
                   </div>
 
-                  {/* CRM Grid Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs font-mono">
-                      <thead>
-                        <tr className="border-b text-slate-400 uppercase text-[10px] font-bold bg-slate-50">
-                          <th className="py-3 px-4 text-left">Donor Profile</th>
-                          <th className="py-3 px-4 text-left">Segment Type</th>
-                          <th className="py-3 px-4 text-right">Total Giving</th>
-                          <th className="py-3 px-4 text-center">Engagement Index</th>
-                          <th className="py-3 px-4 text-left">AI Next Program Suggestion</th>
-                          <th className="py-3 px-4 text-right">Details</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {filteredDonors.map(donor => (
-                          <tr key={donor.id} className="hover:bg-slate-50/50">
-                            <td className="py-3.5 px-4 text-left">
-                              <div className="font-bold text-slate-800">{donor.name}</div>
-                              <div className="text-[10px] text-slate-400">{donor.email}</div>
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-500">{donor.segment}</td>
-                            <td className="py-3.5 px-4 text-right font-black text-slate-900">
-                              ₹{donor.totalGiving.toLocaleString('en-IN')}
-                            </td>
-                            <td className="py-3.5 px-4 text-center">
-                              <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold">
-                                {donor.score}% Index
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-600 font-sans">{donor.recommended}</td>
-                            <td className="py-3.5 px-4 text-right">
-                              <button
-                                onClick={() => setSelectedDonorForDetail(donor)}
-                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+                  {(isCreatingDonor || editingDonor) ? (
+                    <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 text-xs animate-fade-in font-sans">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                        <h4 className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                          <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+                          <span>{isCreatingDonor ? 'Enroll New Supporter Profile' : 'Edit Supporter CRM Details'}</span>
+                        </h4>
+                        <button
+                          onClick={() => {
+                            setIsCreatingDonor(false);
+                            setEditingDonor(null);
+                          }}
+                          className="px-2 py-1 bg-white hover:bg-slate-100 border text-slate-500 rounded font-mono text-[10px] cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Full Supporter / Company Name</label>
+                            <input
+                              type="text"
+                              value={isCreatingDonor ? newDonorForm.name : editingDonor.name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (isCreatingDonor) {
+                                  setNewDonorForm({ ...newDonorForm, name: val });
+                                } else {
+                                  setEditingDonor({ ...editingDonor, name: val });
+                                }
+                              }}
+                              className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                              placeholder="e.g., Deshpande Foundation"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Contact Email</label>
+                              <input
+                                type="email"
+                                value={isCreatingDonor ? newDonorForm.email : editingDonor.email}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (isCreatingDonor) {
+                                    setNewDonorForm({ ...newDonorForm, email: val });
+                                  } else {
+                                    setEditingDonor({ ...editingDonor, email: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                                placeholder="email@domain.com"
+                              />
+                            </div>
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">CRM Segment Type</label>
+                              <select
+                                value={isCreatingDonor ? newDonorForm.segment : editingDonor.segment}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (isCreatingDonor) {
+                                    setNewDonorForm({ ...newDonorForm, segment: val });
+                                  } else {
+                                    setEditingDonor({ ...editingDonor, segment: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
                               >
-                                View CRM
-                              </button>
-                            </td>
+                                <option value="Corporate CSR">Corporate CSR</option>
+                                <option value="Premium Individual">Premium Individual</option>
+                                <option value="NRI Supporter">NRI Supporter</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Cumulative Giving (₹)</label>
+                              <input
+                                type="number"
+                                value={isCreatingDonor ? newDonorForm.totalGiving : editingDonor.totalGiving}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  if (isCreatingDonor) {
+                                    setNewDonorForm({ ...newDonorForm, totalGiving: val });
+                                  } else {
+                                    setEditingDonor({ ...editingDonor, totalGiving: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Engagement Index %</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={isCreatingDonor ? newDonorForm.engagements : (editingDonor.score || editingDonor.engagements || 80)}
+                                onChange={(e) => {
+                                  const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                  if (isCreatingDonor) {
+                                    setNewDonorForm({ ...newDonorForm, engagements: val });
+                                  } else {
+                                    setEditingDonor({ ...editingDonor, score: val, engagements: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">AI Recommendation</label>
+                              <input
+                                type="text"
+                                value={isCreatingDonor ? newDonorForm.recommended : editingDonor.recommended}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (isCreatingDonor) {
+                                    setNewDonorForm({ ...newDonorForm, recommended: val });
+                                  } else {
+                                    setEditingDonor({ ...editingDonor, recommended: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                                placeholder="e.g., Savanur Soil Project"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider font-mono">Upload Donor/Partner Assets</label>
+                            <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">IMAGE FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-indigo-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingDonor) {
+                                          setNewDonorForm({ ...newDonorForm, image: fakeUrl, imageName: file.name });
+                                        } else {
+                                          setEditingDonor({ ...editingDonor, image: fakeUrl, imageName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <ImageIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingDonor ? newDonorForm.imageName : editingDonor.imageName) || 'Choose Image'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">VIDEO FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-indigo-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="video/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingDonor) {
+                                          setNewDonorForm({ ...newDonorForm, video: fakeUrl, videoName: file.name });
+                                        } else {
+                                          setEditingDonor({ ...editingDonor, video: fakeUrl, videoName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <Video className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingDonor ? newDonorForm.videoName : editingDonor.videoName) || 'Choose Video'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Previews */}
+                            <div className="mt-2 flex gap-2">
+                              {(isCreatingDonor ? newDonorForm.image : editingDonor.image) && (
+                                <div className="flex items-center gap-1.5 bg-indigo-50/50 p-1 rounded border text-[9px] text-indigo-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Image Selected</span>
+                                </div>
+                              )}
+                              {(isCreatingDonor ? newDonorForm.video : editingDonor.video) && (
+                                <div className="flex items-center gap-1.5 bg-indigo-50/50 p-1 rounded border text-[9px] text-indigo-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Video Selected</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-3 border-t font-mono">
+                        <button
+                          onClick={() => {
+                            setIsCreatingDonor(false);
+                            setEditingDonor(null);
+                          }}
+                          className="px-4 py-2 border rounded-xl hover:bg-slate-100 text-slate-600 text-xs font-bold cursor-pointer"
+                        >
+                          CANCEL
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (isCreatingDonor) {
+                              const newDon = {
+                                id: `don_new_${Date.now()}`,
+                                name: newDonorForm.name || 'Anonymous Donor',
+                                email: newDonorForm.email || 'info@supporter.org',
+                                segment: newDonorForm.segment,
+                                totalGiving: newDonorForm.totalGiving,
+                                score: newDonorForm.engagements,
+                                recommended: newDonorForm.recommended,
+                                image: newDonorForm.image,
+                                video: newDonorForm.video
+                              };
+                              setDonorList([newDon, ...donorList]);
+                              setIsCreatingDonor(false);
+                            } else {
+                              const updated = donorList.map(d => d.id === editingDonor.id ? editingDonor : d);
+                              setDonorList(updated);
+                              setEditingDonor(null);
+                            }
+                          }}
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+                        >
+                          {isCreatingDonor ? 'SAVE NEW PROFILE' : 'SAVE CHANGES'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* CRM Grid Table */
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs font-mono">
+                        <thead>
+                          <tr className="border-b text-slate-400 uppercase text-[10px] font-bold bg-slate-50">
+                            <th className="py-3 px-4 text-left">Donor Profile</th>
+                            <th className="py-3 px-4 text-left">Segment Type</th>
+                            <th className="py-3 px-4 text-right">Total Giving</th>
+                            <th className="py-3 px-4 text-center">Engagement Index</th>
+                            <th className="py-3 px-4 text-left">AI Next Program Suggestion</th>
+                            <th className="py-3 px-4 text-right">Details</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y">
+                          {filteredDonors.map(donor => (
+                            <tr key={donor.id} className="hover:bg-slate-50/50">
+                              <td className="py-3.5 px-4 text-left">
+                                <div className="font-bold text-slate-800">{donor.name}</div>
+                                <div className="text-[10px] text-slate-400">{donor.email}</div>
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-500">{donor.segment}</td>
+                              <td className="py-3.5 px-4 text-right font-black text-slate-900">
+                                ₹{donor.totalGiving.toLocaleString('en-IN')}
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold">
+                                  {donor.score}% Index
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-600 font-sans">{donor.recommended}</td>
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    onClick={() => setSelectedDonorForDetail(donor)}
+                                    className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingDonor(donor);
+                                      setIsCreatingDonor(false);
+                                    }}
+                                    className="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 border rounded text-[10px] font-bold transition-colors cursor-pointer"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm('Delete this donor profile?')) {
+                                        setDonorList(donorList.filter(d => d.id !== donor.id));
+                                      }
+                                    }}
+                                    className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
                   {/* Selected donor detail view modal simulation */}
                   <AnimatePresence>
@@ -2143,54 +3330,322 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
               {/* TAB 5: VOLUNTEER MANAGEMENT */}
               {currentAdminTab === 'volunteers' && (
-                <div className="p-6 bg-white border border-slate-200 rounded-3xl text-left space-y-6 animate-fade-in">
-                  <div className="pb-4 border-b">
-                    <h3 className="text-base font-extrabold font-display text-slate-900">Volunteer Force Coordination</h3>
-                    <p className="text-xs text-slate-400">Review onboarding skill profiles, assign regional task modules, and authorize service certification certificates.</p>
+                <div className="p-6 bg-white border border-slate-200 rounded-3xl text-left space-y-6 animate-fade-in font-sans">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b">
+                    <div>
+                      <h3 className="text-base font-extrabold font-display text-slate-900">Volunteer Force Coordination</h3>
+                      <p className="text-xs text-slate-400">Review onboarding skill profiles, assign regional task modules, and authorize service certification certificates.</p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setIsCreatingVolunteer(true);
+                        setEditingVolunteer(null);
+                        setNewVolunteerForm({
+                          name: '',
+                          skill: '',
+                          location: '',
+                          status: 'Assigned',
+                          hours: 10,
+                          image: '',
+                          imageName: '',
+                          video: '',
+                          videoName: ''
+                        });
+                      }}
+                      className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-mono flex items-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <PlusCircle size={12} />
+                      <span>ADD VOLUNTEER</span>
+                    </button>
                   </div>
 
-                  {/* Volunteers Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs font-mono">
-                      <thead>
-                        <tr className="border-b text-slate-400 uppercase text-[10px] font-bold bg-slate-50">
-                          <th className="py-3 px-4 text-left">Volunteer Profile</th>
-                          <th className="py-3 px-4 text-left">Onboarding Skill Match</th>
-                          <th className="py-3 px-4 text-left">Target Region</th>
-                          <th className="py-3 px-4 text-left">Work status</th>
-                          <th className="py-3 px-4 text-right">Contribution Hours</th>
-                          <th className="py-3 px-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {volunteerList.map(vol => (
-                          <tr key={vol.id} className="hover:bg-slate-50/50">
-                            <td className="py-3.5 px-4 text-left font-bold text-slate-800">{vol.name}</td>
-                            <td className="py-3.5 px-4 text-slate-500">{vol.skill}</td>
-                            <td className="py-3.5 px-4 text-slate-600">{vol.location}</td>
-                            <td className="py-3.5 px-4">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                                vol.status === 'Assigned' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                              }`}>
-                                {vol.status}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-right font-black">{vol.hours} Hrs</td>
-                            <td className="py-3.5 px-4 text-right space-x-1">
-                              <button
-                                onClick={() => {
-                                  alert(`Generating signed, board-validated service certification PDF for ${vol.name} (Total hours: ${vol.hours})`);
+                  {(isCreatingVolunteer || editingVolunteer) ? (
+                    <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 text-xs animate-fade-in font-sans text-left">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                        <h4 className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                          <span>{isCreatingVolunteer ? 'Add New Volunteer Force' : 'Edit Volunteer Force Details'}</span>
+                        </h4>
+                        <button
+                          onClick={() => {
+                            setIsCreatingVolunteer(false);
+                            setEditingVolunteer(null);
+                          }}
+                          className="px-2 py-1 bg-white hover:bg-slate-100 border text-slate-500 rounded font-mono text-[10px] cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Volunteer Full Name</label>
+                            <input
+                              type="text"
+                              value={isCreatingVolunteer ? newVolunteerForm.name : editingVolunteer.name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (isCreatingVolunteer) {
+                                  setNewVolunteerForm({ ...newVolunteerForm, name: val });
+                                } else {
+                                  setEditingVolunteer({ ...editingVolunteer, name: val });
+                                }
+                              }}
+                              className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                              placeholder="e.g., Rajesh Kumar"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Skill Profile</label>
+                              <input
+                                type="text"
+                                value={isCreatingVolunteer ? newVolunteerForm.skill : editingVolunteer.skill}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (isCreatingVolunteer) {
+                                    setNewVolunteerForm({ ...newVolunteerForm, skill: val });
+                                  } else {
+                                    setEditingVolunteer({ ...editingVolunteer, skill: val });
+                                  }
                                 }}
-                                className="px-2 py-1 bg-amber-50 text-amber-800 rounded border border-amber-200 text-[10px] cursor-pointer"
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                                placeholder="e.g., Soil Chemist"
+                              />
+                            </div>
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Region / Location</label>
+                              <input
+                                type="text"
+                                value={isCreatingVolunteer ? newVolunteerForm.location : editingVolunteer.location}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (isCreatingVolunteer) {
+                                    setNewVolunteerForm({ ...newVolunteerForm, location: val });
+                                  } else {
+                                    setEditingVolunteer({ ...editingVolunteer, location: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
+                                placeholder="e.g., Haveri"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Contribution Hours</label>
+                              <input
+                                type="number"
+                                value={isCreatingVolunteer ? newVolunteerForm.hours : editingVolunteer.hours}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  if (isCreatingVolunteer) {
+                                    setNewVolunteerForm({ ...newVolunteerForm, hours: val });
+                                  } else {
+                                    setEditingVolunteer({ ...editingVolunteer, hours: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider">Work Status</label>
+                              <select
+                                value={isCreatingVolunteer ? newVolunteerForm.status : editingVolunteer.status}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (isCreatingVolunteer) {
+                                    setNewVolunteerForm({ ...newVolunteerForm, status: val });
+                                  } else {
+                                    setEditingVolunteer({ ...editingVolunteer, status: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 border rounded-lg bg-white text-slate-800 font-medium"
                               >
-                                Issue Certificate
-                              </button>
-                            </td>
+                                <option value="Assigned">Assigned</option>
+                                <option value="Pending">Pending</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block mb-1 font-bold text-slate-500 uppercase text-[9px] tracking-wider font-mono">Upload Volunteer Assets</label>
+                            <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">IMAGE FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-emerald-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingVolunteer) {
+                                          setNewVolunteerForm({ ...newVolunteerForm, image: fakeUrl, imageName: file.name });
+                                        } else {
+                                          setEditingVolunteer({ ...editingVolunteer, image: fakeUrl, imageName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <ImageIcon className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingVolunteer ? newVolunteerForm.imageName : editingVolunteer.imageName) || 'Choose Image'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="block mb-1 text-[9px] text-slate-400 font-mono font-bold">VIDEO FILE</span>
+                                <div className="relative border border-dashed border-slate-200 hover:border-emerald-400 rounded-lg p-2 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50">
+                                  <input 
+                                    type="file" 
+                                    accept="video/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const fakeUrl = URL.createObjectURL(file);
+                                        if (isCreatingVolunteer) {
+                                          setNewVolunteerForm({ ...newVolunteerForm, video: fakeUrl, videoName: file.name });
+                                        } else {
+                                          setEditingVolunteer({ ...editingVolunteer, video: fakeUrl, videoName: file.name });
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <Video className="w-4 h-4 text-slate-400 mb-0.5" />
+                                  <span className="text-[9px] text-slate-600 font-bold truncate max-w-full">
+                                    {(isCreatingVolunteer ? newVolunteerForm.videoName : editingVolunteer.videoName) || 'Choose Video'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Previews */}
+                            <div className="mt-2 flex gap-2">
+                              {(isCreatingVolunteer ? newVolunteerForm.image : editingVolunteer.image) && (
+                                <div className="flex items-center gap-1.5 bg-emerald-50/50 p-1 rounded border text-[9px] text-emerald-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Image Selected</span>
+                                </div>
+                              )}
+                              {(isCreatingVolunteer ? newVolunteerForm.video : editingVolunteer.video) && (
+                                <div className="flex items-center gap-1.5 bg-emerald-50/50 p-1 rounded border text-[9px] text-emerald-700">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  <span>Video Selected</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-3 border-t font-mono">
+                        <button
+                          onClick={() => {
+                            setIsCreatingVolunteer(false);
+                            setEditingVolunteer(null);
+                          }}
+                          className="px-4 py-2 border rounded-xl hover:bg-slate-100 text-slate-600 text-xs font-bold cursor-pointer"
+                        >
+                          CANCEL
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (isCreatingVolunteer) {
+                              const newVol = {
+                                id: `vol_new_${Date.now()}`,
+                                name: newVolunteerForm.name || 'Anonymous Volunteer',
+                                skill: newVolunteerForm.skill || 'Agriculture Support',
+                                location: newVolunteerForm.location || 'Haveri',
+                                status: newVolunteerForm.status,
+                                hours: newVolunteerForm.hours,
+                                image: newVolunteerForm.image,
+                                video: newVolunteerForm.video
+                              };
+                              setVolunteerList([newVol, ...volunteerList]);
+                              setIsCreatingVolunteer(false);
+                            } else {
+                              const updated = volunteerList.map(v => v.id === editingVolunteer.id ? editingVolunteer : v);
+                              setVolunteerList(updated);
+                              setEditingVolunteer(null);
+                            }
+                          }}
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+                        >
+                          {isCreatingVolunteer ? 'SAVE NEW PROFILE' : 'SAVE CHANGES'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Volunteers Table */
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs font-mono">
+                        <thead>
+                          <tr className="border-b text-slate-400 uppercase text-[10px] font-bold bg-slate-50">
+                            <th className="py-3 px-4 text-left">Volunteer Profile</th>
+                            <th className="py-3 px-4 text-left">Onboarding Skill Match</th>
+                            <th className="py-3 px-4 text-left">Target Region</th>
+                            <th className="py-3 px-4 text-left">Work status</th>
+                            <th className="py-3 px-4 text-right">Contribution Hours</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y">
+                          {volunteerList.map(vol => (
+                            <tr key={vol.id} className="hover:bg-slate-50/50">
+                              <td className="py-3.5 px-4 text-left font-bold text-slate-800">{vol.name}</td>
+                              <td className="py-3.5 px-4 text-slate-500">{vol.skill}</td>
+                              <td className="py-3.5 px-4 text-slate-600">{vol.location}</td>
+                              <td className="py-3.5 px-4">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                  vol.status === 'Assigned' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                }`}>
+                                  {vol.status}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-right font-black">{vol.hours} Hrs</td>
+                              <td className="py-3.5 px-4 text-right space-x-1">
+                                <button
+                                  onClick={() => {
+                                    alert(`Generating signed, board-validated service certification PDF for ${vol.name} (Total hours: ${vol.hours})`);
+                                  }}
+                                  className="px-2 py-1 bg-amber-50 text-amber-800 rounded border border-amber-200 text-[10px] cursor-pointer"
+                                >
+                                  Issue Certificate
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingVolunteer(vol);
+                                    setIsCreatingVolunteer(false);
+                                  }}
+                                  className="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 border rounded text-[10px] font-bold transition-colors cursor-pointer"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Delete this volunteer?')) {
+                                      setVolunteerList(volunteerList.filter(v => v.id !== vol.id));
+                                    }
+                                  }}
+                                  className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                                  id={`delete-volunteer-${vol.id}`}
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
                 </div>
               )}

@@ -63,10 +63,75 @@ export default function BlogDetail({ slug, setActivePage, highContrast }: BlogDe
     return RICH_ARTICLES;
   }, []);
 
+  // Fallbacks for newly created articles that lack full nested properties
+  const DEFAULT_ARTICLE_FALLBACKS = useMemo(() => ({
+    image: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=800',
+    title: 'Untitled Article',
+    topic: 'Agriculture',
+    summary: 'No summary provided.',
+    authorImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+    author: 'Raita Mitra Editor',
+    authorRole: 'Contributor',
+    date: new Date().toISOString().split('T')[0],
+    readTime: '5 min read',
+    viewsCount: 15,
+    tags: ['Community', 'Agriculture'],
+    content: 'Details are being compiled for this article.',
+    keyTakeaways: [
+      'Empowering regional smallholder communities directly through programmatic action.',
+      'Transitioning to organic practices with long-term ecological baselines.'
+    ],
+    infographics: {
+      title: 'Soils Organic Baseline Estimates',
+      chartType: 'line',
+      description: 'Progress metric tracking soil carbon indicators in selected clusters.',
+      data: [
+        { year: '2023', carbon: 0.5, moisture: 15, yield: 500 },
+        { year: '2026', carbon: 1.2, moisture: 25, yield: 700 }
+      ]
+    },
+    gallery: [
+      { url: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600', caption: 'Field intervention tracking.' }
+    ],
+    citation: {
+      apa: 'Raita Mitra Social Trust. (2026). Technical agronomy and social report. Retrieved from https://raitamitra.org',
+      mla: 'Raita Mitra Social Trust. "Technical agronomy and social report," 2026.',
+      chicago: 'Raita Mitra Social Trust. "Technical agronomy and social report," 2026.'
+    },
+    references: [
+      'Raita Mitra Social Trust. (2025). Programmatic field logs & utilization reports.',
+      'Karnataka Department of Agriculture. (2024). Agricultural census data & soil maps.'
+    ],
+    authorBio: 'Raita Mitra senior contributor coordinating technical field outreach and sustainable rural ecosystems.',
+    authorSocials: {
+      linkedin: 'https://linkedin.com',
+      twitter: 'https://twitter.com',
+      email: 'info@raitamitra.org'
+    }
+  }), []);
+
   // Fetch active article by slug
   const article = useMemo(() => {
-    return blogsList.find(a => a.slug === slug) || blogsList[0];
-  }, [slug, blogsList]);
+    const found = blogsList.find(a => a.slug === slug) || blogsList[0];
+    if (!found) return DEFAULT_ARTICLE_FALLBACKS;
+
+    return {
+      ...DEFAULT_ARTICLE_FALLBACKS,
+      ...found,
+      citation: {
+        ...DEFAULT_ARTICLE_FALLBACKS.citation,
+        ...(found.citation || {})
+      },
+      infographics: {
+        ...DEFAULT_ARTICLE_FALLBACKS.infographics,
+        ...(found.infographics || {})
+      },
+      authorSocials: {
+        ...DEFAULT_ARTICLE_FALLBACKS.authorSocials,
+        ...(found.authorSocials || {})
+      }
+    };
+  }, [slug, blogsList, DEFAULT_ARTICLE_FALLBACKS]);
 
   // Global resets
   useEffect(() => {

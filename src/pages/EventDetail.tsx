@@ -63,10 +63,62 @@ export default function EventDetail({ slug, setActivePage, highContrast }: Event
     return RICH_EVENTS;
   }, []);
 
+  // Fallbacks for newly created events that lack full nested properties
+  const DEFAULT_EVENT_FALLBACKS = useMemo(() => ({
+    tagline: 'Empowering dryland farmers and regional smallholder communities directly through programmatic action.',
+    certificateType: 'Agronomy Certificate',
+    googleCalendarUrl: 'https://calendar.google.com',
+    locationDetails: {
+      address: 'Haveri Cooperative Center, NH4 Highway, Haveri, Karnataka',
+      landmarks: ['Opposite Haveri Government College', 'Next to NABARD Regional Office'],
+      lat: 14.7954,
+      lng: 75.4022,
+      parking: 'Complimentary outdoor parking for motorbikes and agrarian transit vehicles.'
+    },
+    agenda: [
+      { time: '10:00 AM - 11:30 AM', title: 'Agronomic Soil Preparation Protocols', description: 'Interactive lectures detailing soil carbon, water absorption, and baseline diagnostics.' },
+      { time: '11:30 AM - 01:00 PM', title: 'Hands-on Soil Testing Live Demo', description: 'Practical session demonstrating vernacular diagnostic kits.' },
+      { time: '01:00 PM - 02:00 PM', title: 'Complimentary Millet Luncheon', description: 'Networking hour for community leaders.' },
+      { time: '02:00 PM - 04:00 PM', title: 'Soil Restoration Masterclass', description: 'Summary recommendations and certificate distribution.' }
+    ],
+    speakers: [
+      {
+        name: 'Dr. Basavaraj S. Hosmani',
+        role: 'Chief Agronomy Consultant',
+        designation: 'Ex-UAS Dharwad Faculty & NABARD Agronomy Specialist',
+        bio: 'Dr. Basavaraj coordinates sustainable dryland crop ecosystems and vernacular soil testing kits across Karnataka.',
+        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+        linkedin: 'https://linkedin.com'
+      }
+    ],
+    downloads: [
+      { type: 'PDF Handbook', title: 'Vernacular Agronomy Quick Start Guide.pdf', size: '1.4 MB' },
+      { type: 'CSV Template', title: 'Soil Baseline Tracker Template.csv', size: '204 KB' }
+    ],
+    faqs: [
+      { question: 'Is this workshop open to everyone?', answer: 'Yes! All dryland farmers, rural students, and cooperative leads are welcome.' },
+      { question: 'Will certificates be provided?', answer: 'Yes, physical certificates will be issued upon completion.' }
+    ]
+  }), []);
+
   // Fetch active event by slug or fallback to the first one
   const event = useMemo(() => {
-    return eventsList.find(e => e.slug === slug) || eventsList[0] || RICH_EVENTS[0];
-  }, [slug, eventsList]);
+    const found = eventsList.find(e => e.slug === slug) || eventsList[0] || RICH_EVENTS[0];
+    if (!found) return DEFAULT_EVENT_FALLBACKS;
+
+    return {
+      ...DEFAULT_EVENT_FALLBACKS,
+      ...found,
+      locationDetails: {
+        ...DEFAULT_EVENT_FALLBACKS.locationDetails,
+        ...(found.locationDetails || {})
+      },
+      agenda: found.agenda && found.agenda.length > 0 ? found.agenda : DEFAULT_EVENT_FALLBACKS.agenda,
+      speakers: found.speakers && found.speakers.length > 0 ? found.speakers : DEFAULT_EVENT_FALLBACKS.speakers,
+      downloads: found.downloads && found.downloads.length > 0 ? found.downloads : DEFAULT_EVENT_FALLBACKS.downloads,
+      faqs: found.faqs && found.faqs.length > 0 ? found.faqs : DEFAULT_EVENT_FALLBACKS.faqs
+    };
+  }, [slug, eventsList, DEFAULT_EVENT_FALLBACKS]);
 
   // Scroll to top on load
   useEffect(() => {
