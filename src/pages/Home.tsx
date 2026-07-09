@@ -33,6 +33,9 @@ import {
 import { programsData } from '../data/programs';
 import { impactStories, testimonials } from '../data/stories';
 import KarnatakaImpactMap from '../components/KarnatakaImpactMap';
+import home1 from '../../home_1.jpg';
+import home2 from '../../home_2.jpg';
+import homePartnerWithUs from '../../home_partner_with_us.jpg';
 
 interface HomeProps {
   setActivePage: (page: string) => void;
@@ -56,6 +59,38 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
   const [corporateName, setCorporateName] = useState('');
   const [corporateEmail, setCorporateEmail] = useState('');
   const [downloadError, setDownloadError] = useState('');
+  const [homeNewsletterName, setHomeNewsletterName] = useState('');
+  const [homeNewsletterEmail, setHomeNewsletterEmail] = useState('');
+
+  const handleHomeNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!homeNewsletterEmail) return;
+
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Newsletter Signup',
+        name: homeNewsletterName || 'Homepage Subscriber',
+        email: homeNewsletterEmail,
+        phone: '',
+        subject: 'Home Newsletter Signup',
+        message: 'Subscribed to newsletter updates from Home page.',
+        metadata: { page: 'Home' }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Homepage newsletter subscriber logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging homepage newsletter subscription:', err);
+    });
+
+    alert('Newsletter Subscription completed successfully!');
+    setHomeNewsletterName('');
+    setHomeNewsletterEmail('');
+  };
 
   // Cinematic Hero Slide Images (Drone shots, SHGs, Classrooms, Tree plantations)
   const heroSlides = [
@@ -94,15 +129,83 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
   // Carousel Success Stories
   const [activeStory, setActiveStory] = useState(0);
 
-  // Gallery Masonry Images
-  const galleryImages = [
-    { id: 1, category: 'agriculture', url: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600', title: 'Soil Testing Lab' },
-    { id: 2, category: 'women', url: 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=600', title: 'Dairy Cooperative Meeting' },
-    { id: 3, category: 'education', url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600', title: 'AI Block Coding Lab' },
-    { id: 4, category: 'climate', url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600', title: 'Miyawaki Forest Plantation' },
-    { id: 5, category: 'health', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=600', title: 'Anemia Diagnostic Camp' },
-    { id: 6, category: 'agriculture', url: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&q=80&w=600', title: 'Solar Micro-Irrigation Grid' }
-  ];
+  // Gallery Masonry Images (Dynamic from localStorage if available)
+  const [galleryImages, setGalleryImages] = useState<any[]>(() => {
+    try {
+      const stored = localStorage.getItem('raita_mitra_gallery_list');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed)) {
+          return parsed.map((item: any, idx: number) => {
+            const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
+            let category = 'agriculture';
+            if (tag.includes('women') || tag.includes('empowerment')) {
+              category = 'women';
+            } else if (tag.includes('education') || tag.includes('skill') || tag.includes('stem') || tag.includes('ai') || tag.includes('python')) {
+              category = 'education';
+            } else if (tag.includes('climate') || tag.includes('environment') || tag.includes('eco')) {
+              category = 'climate';
+            } else if (tag.includes('health')) {
+              category = 'health';
+            }
+            return {
+              id: item.id || `home_photo_${idx}`,
+              category,
+              url: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600',
+              title: item.title
+            };
+          });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return [
+      { id: 1, category: 'agriculture', url: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600', title: 'Solar-Powered Drip Irrigation Setup' },
+      { id: 2, category: 'women', url: 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=600', title: 'Yaraguppi Dairy Cooperative Ledger Review' },
+      { id: 3, category: 'education', url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600', title: 'High School Girls Exploring Scratch Coding' },
+      { id: 4, category: 'health', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=600', title: 'Mobile Diagnostic Pediatric Screening' },
+      { id: 5, category: 'climate', url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600', title: 'Watershed Bunding & Sapling Afforestation' },
+      { id: 6, category: 'agriculture', url: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600', title: 'Millet Processing Unit Packaging' },
+      { id: 7, category: 'agriculture', url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=600', title: 'Taluk Agrarian Advisory Assembly' },
+      { id: 8, category: 'agriculture', url: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=600', title: 'Harvesting Diversified Horticulture Crops' }
+    ];
+  });
+
+  // Fetch gallery list from server on mount
+  useEffect(() => {
+    fetch('/api/gallery')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const formatted = data.map((item: any, idx: number) => {
+            const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
+            let category = 'agriculture';
+            if (tag.includes('women') || tag.includes('empowerment')) {
+              category = 'women';
+            } else if (tag.includes('education') || tag.includes('skill') || tag.includes('stem') || tag.includes('ai') || tag.includes('python')) {
+              category = 'education';
+            } else if (tag.includes('climate') || tag.includes('environment') || tag.includes('eco')) {
+              category = 'climate';
+            } else if (tag.includes('health')) {
+              category = 'health';
+            }
+            return {
+              id: item.id || `home_photo_${idx}`,
+              category,
+              url: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600',
+              title: item.title
+            };
+          });
+          setGalleryImages(formatted);
+          localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+        }
+      })
+      .catch(err => console.warn('Failed to load home gallery from server:', err));
+  }, []);
 
   const filteredGallery = activeGalleryTab === 'all' 
     ? galleryImages 
@@ -167,6 +270,31 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
       setDownloadError('Please provide a valid corporate email.');
       return;
     }
+
+    // POST corporate prospectus download to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Partner Onboarding',
+        name: corporateName,
+        email: corporateEmail,
+        phone: '',
+        subject: 'Prospectus & Audited Logs Download Request',
+        message: 'Requested download access for CSR audited files, MCA clearance forms, and compliance folders.',
+        metadata: {
+          corporateName,
+          requestType: 'Prospectus Download'
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Prospectus download request logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging prospectus download:', err);
+    });
 
     setDownloadError('');
     setDownloadStep('progress');
@@ -339,46 +467,90 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
 
       </section>
 
-      {/* 2. OUR VALUE PROPOSITION & WHO WE ARE (Two-Column About Preview with Grid Collage) */}
-      <section className={`py-24 px-4 md:px-8 w-full border-b ${highContrast ? 'bg-black border-white' : 'bg-white border-slate-100'}`} id="who-we-are">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          
-          {/* Left Side: Sophisticated overlapping grid collage */}
-          <div className="lg:col-span-5 relative h-[380px] md:h-[450px]" id="about-image-collage">
-            {/* Primary Background Card */}
-            <div className="absolute top-0 left-0 w-3/4 h-3/4 rounded-3xl overflow-hidden shadow-xl transform -rotate-3 hover:rotate-0 transition-transform duration-500 border border-slate-100">
-              <img 
-                src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&q=80&w=600" 
-                alt="Agriculture land karnataka" 
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            {/* Secondary Foreground Card */}
-            <div className="absolute bottom-0 right-0 w-2/3 h-2/3 rounded-3xl overflow-hidden shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500 border-4 border-white dark:border-slate-900">
-              <img 
-                src="https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=600" 
-                alt="Women processing crops" 
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            {/* Small Focal Overlay Card */}
-            <div className={`absolute top-1/3 right-1/4 p-4 rounded-2xl shadow-lg border hidden sm:block max-w-[180px] ${
-              highContrast ? 'bg-black border-white text-white' : 'bg-forest text-white'
+      {/* GROUND LEVEL IMPACT PHOTO SHOWCASE */}
+      <section className={`py-16 px-4 md:px-8 w-full border-b ${
+        highContrast ? 'bg-black border-white text-white' : 'bg-slate-50/40 border-slate-100'
+      }`}>
+        <div className="max-w-7xl mx-auto space-y-12 text-center">
+          <div className="space-y-4 max-w-3xl mx-auto">
+            <span className="text-xs uppercase font-mono tracking-wider text-gold font-bold">Field-Validated Interventions</span>
+            <h2 className={`font-display font-extrabold text-2xl md:text-3xl leading-tight ${
+              highContrast ? 'text-white' : 'text-forest'
             }`}>
-              <div className="flex gap-2 items-center">
-                <CheckCircle2 size={16} className="text-gold" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider">SECURE TRUST</span>
-              </div>
-              <p className="text-[11px] font-semibold leading-normal mt-1.5 font-display">
-                Governance matching Tata Trusts standards.
-              </p>
-            </div>
+              Our Active Ground-Level Operations
+            </h2>
+            <p className="text-slate-500 text-sm leading-relaxed max-w-2xl mx-auto">
+              Real-time physical snapshots from our ongoing projects across Karnataka, delivering targeted agricultural support and sustainable livelihood systems.
+            </p>
           </div>
 
-          {/* Right Side: Deep Storytelling Text Block */}
-          <div className="lg:col-span-7 space-y-6 text-left">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Image Card 1: Sustainable Agriculture */}
+            <div className={`group relative rounded-3xl overflow-hidden border transition-all duration-300 shadow-md hover:shadow-xl flex flex-col h-full ${
+              highContrast ? 'bg-black border-white' : 'bg-white border-slate-100'
+            }`}>
+              <div className="relative h-64 sm:h-80 overflow-hidden shrink-0">
+                <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors duration-300 z-10" />
+                <img 
+                  src={home1} 
+                  alt="Raita Mitra Sustainable Agriculture Operations" 
+                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full shadow-sm border border-emerald-200/50">
+                  <Sprout size={12} className="text-emerald-600 animate-bounce" />
+                  Eco-Farming Initiative
+                </span>
+              </div>
+              <div className="p-6 text-left space-y-2 flex-grow">
+                <h3 className={`font-display font-bold text-lg ${
+                  highContrast ? 'text-white' : 'text-slate-900'
+                }`}>
+                  Sustainable Farming &amp; Watershed Management
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed font-sans">
+                  Direct agricultural interventions in Hubballi. Restoring soil microbiomes, developing decentralized rain-water recharge systems, and transitioning smallholder farmers to zero-debt organic cultivation.
+                </p>
+              </div>
+            </div>
+
+            {/* Image Card 2: Livelihood Training */}
+            <div className={`group relative rounded-3xl overflow-hidden border transition-all duration-300 shadow-md hover:shadow-xl flex flex-col h-full ${
+              highContrast ? 'bg-black border-white' : 'bg-white border-slate-100'
+            }`}>
+              <div className="relative h-64 sm:h-80 overflow-hidden shrink-0">
+                <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors duration-300 z-10" />
+                <img 
+                  src={home2} 
+                  alt="Raita Mitra Women SHG Enterprise Training" 
+                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 text-[10px] font-mono font-extrabold uppercase tracking-widest text-rose-800 bg-rose-50 px-3 py-1.5 rounded-full shadow-sm border border-rose-200/50">
+                  <Laptop size={12} className="text-rose-600" />
+                  Livelihood &amp; SHG Batches
+                </span>
+              </div>
+              <div className="p-6 text-left space-y-2 flex-grow">
+                <h3 className={`font-display font-bold text-lg ${
+                  highContrast ? 'text-white' : 'text-slate-900'
+                }`}>
+                  Women-Led Self-Help Groups &amp; Skill Development
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed font-sans">
+                  Empowering rural women through tailoring micro-enterprises, digital literacy certification, and collaborative marketing structures to build high-margin sustainable household incomes.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className={`py-24 px-4 md:px-8 w-full border-b ${highContrast ? 'bg-black border-white' : 'bg-white border-slate-100'}`} id="who-we-are">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          
+          {/* Left Side: Deep Storytelling Text Block */}
+          <div className="lg:col-span-7 space-y-6 text-left animate-fade-in">
             <span className="text-xs uppercase font-mono tracking-wider text-gold font-bold">Our Governance Ethos</span>
             <h2 className={`font-display font-extrabold text-3xl md:text-4xl leading-tight ${
               highContrast ? 'text-white' : 'text-forest'
@@ -392,24 +564,6 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
               We translate institutional CSR capital into audited, localized interventions. Guided by Amartya Sen’s Capability Approach, we prioritize enhancing freedoms and choices for smallholders rather than implementing dry, top-down dependencies.
             </p>
 
-            {/* Checkmark Bento Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3.5 items-start shadow-sm">
-                <CheckCircle2 size={18} className="text-forest shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">100% Geo-tagged Milestones</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Our audits compile physical, photographic, and location-registered logs of every active watershed and solar grid.</p>
-                </div>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3.5 items-start shadow-sm">
-                <CheckCircle2 size={18} className="text-forest shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Zero-Debt Farming Transition</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Eliminating heavy synthetic agricultural cost chains through decentralized vermicomposting and traditional seed vaults.</p>
-                </div>
-              </div>
-            </div>
-
             <div className="pt-4">
               <button 
                 onClick={() => setActivePage('about')}
@@ -417,9 +571,45 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
                   highContrast ? 'text-white underline' : 'text-forest hover:text-forest-light'
                 }`}
               >
-                Learn about our journey & compliance frameworks
+                Learn about our journey &amp; compliance frameworks
                 <ArrowRight size={14} />
               </button>
+            </div>
+          </div>
+
+          {/* Right Side: Governance Integrity Banner & Checkmark Bento Metrics Stacked */}
+          <div className="lg:col-span-5 space-y-6 text-left">
+            {/* Micro Trust Banner matching Tata standards */}
+            <div className={`flex items-start gap-3.5 p-5 rounded-2xl border ${
+              highContrast 
+                ? 'bg-black border-white text-white' 
+                : 'bg-emerald-50/50 border-emerald-100/40 text-emerald-950 shadow-sm'
+            }`}>
+              <ShieldCheck size={24} className="text-emerald-600 shrink-0 mt-0.5" />
+              <div className="text-left space-y-1">
+                <p className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-emerald-800">Governance Integrity Guarantee</p>
+                <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                  Our projects match Tata Trusts &amp; leading transparency guidelines, backed by geo-tagged milestone verification.
+                </p>
+              </div>
+            </div>
+
+            {/* Checkmark Bento Metrics Grid */}
+            <div className="space-y-4">
+              <div className="p-4.5 rounded-2xl bg-slate-50 border border-slate-100/80 flex gap-3.5 items-start shadow-sm">
+                <CheckCircle2 size={18} className="text-forest shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">100% Geo-tagged Milestones</h4>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Our audits compile physical, photographic, and location-registered logs of every active watershed and solar grid.</p>
+                </div>
+              </div>
+              <div className="p-4.5 rounded-2xl bg-slate-50 border border-slate-100/80 flex gap-3.5 items-start shadow-sm">
+                <CheckCircle2 size={18} className="text-forest shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Zero-Debt Farming Transition</h4>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Eliminating heavy synthetic agricultural cost chains through decentralized vermicomposting and traditional seed vaults.</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -617,9 +807,9 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
       <section className="relative w-full py-20 px-4 md:px-8 bg-forest text-white overflow-hidden text-left" id="csr-banner">
         
         {/* Background Image with Deep Contrast Overlay */}
-        <div className="absolute inset-0 z-0 opacity-15">
+        <div className="absolute inset-0 z-0 opacity-25">
           <img 
-            src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1600" 
+            src={homePartnerWithUs} 
             alt="Corporate NGO collaboration" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -1128,10 +1318,12 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
               We compile certified geographical baseline data, audited financial metrics, and progress logs quarterly. Subscribe to our newsletter to receive direct updates.
             </p>
 
-            <form onSubmit={(e) => { e.preventDefault(); alert('Newsletter Subscription completed successfully!'); }} className="max-w-md mx-auto grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2">
+            <form onSubmit={handleHomeNewsletterSubmit} className="max-w-md mx-auto grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2">
               <input 
                 type="text" 
                 placeholder="Full Name" 
+                value={homeNewsletterName}
+                onChange={(e) => setHomeNewsletterName(e.target.value)}
                 className={`sm:col-span-4 px-4 py-3 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-gold ${
                   highContrast ? 'bg-black border border-white text-white' : 'bg-slate-900 border-slate-800 text-white placeholder:text-slate-400'
                 }`}
@@ -1140,6 +1332,8 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
               <input 
                 type="email" 
                 placeholder="Corporate Email" 
+                value={homeNewsletterEmail}
+                onChange={(e) => setHomeNewsletterEmail(e.target.value)}
                 className={`sm:col-span-5 px-4 py-3 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-gold ${
                   highContrast ? 'bg-black border border-white text-white' : 'bg-slate-900 border-slate-800 text-white placeholder:text-slate-400'
                 }`}

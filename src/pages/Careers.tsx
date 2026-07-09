@@ -80,105 +80,157 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedJob, setSelectedJob] = useState<JobOpening | null>(null);
   
-  // Custom job management (unlimited job postings through CMS simulator)
-  const [jobs, setJobs] = useState<JobOpening[]>([
-    {
-      id: 'job-1',
-      title: 'Rural Program Coordinator',
-      department: 'Programs',
-      location: 'Hubballi, Karnataka',
-      type: 'Full-time',
-      experience: '2-4 Years',
-      salary: '₹4.5 - ₹6.0 LPA',
-      description: 'Lead grassroots execution of sustainable agriculture and women self-help circle programs in Dharwad and Gadag districts.',
-      requirements: [
-        'Master’s degree in Social Work (MSW), Agriculture, Rural Development, or related disciplines.',
-        'Fluency in Kannada and English is mandatory.',
-        'Willingness to travel extensively to rural communities.',
-        'Experience coordinating with local government stakeholders.'
-      ]
-    },
-    {
-      id: 'job-2',
-      title: 'Digital & AI Skill Lab Mentor',
-      department: 'Technology',
-      location: 'Belagavi, Karnataka',
-      type: 'Full-time',
-      experience: '1-3 Years',
-      salary: '₹3.6 - ₹5.0 LPA',
-      description: 'Train rural youth in foundational digital skills, coding literacy, and AI applications to bridge the digital divide.',
-      requirements: [
-        'B.Tech/BCA/B.Sc in Computer Science or equivalent field experience.',
-        'Strong knowledge of digital workflows, basic frontend, and AI tools (ChatGPT, Gemini API, Canva).',
-        'Passion for teaching and community development.',
-        'Ability to translate technical jargon into simple Kannada/English.'
-      ]
-    },
-    {
-      id: 'job-3',
-      title: 'Impact Monitoring & Evaluation Associate',
-      department: 'Monitoring & Evaluation',
-      location: 'Hubballi, Karnataka',
-      type: 'Full-time',
-      experience: '2-5 Years',
-      salary: '₹4.0 - ₹5.5 LPA',
-      description: 'Design and implement scientific monitoring frameworks to measure project effectiveness and write comprehensive audit reports.',
-      requirements: [
-        'Degree in Statistics, Economics, Social Sciences, or Data Science.',
-        'Proficiency in Excel, SPSS, or mobile data collection platforms (KoboToolbox, ODK).',
-        'Strong report-writing and narrative formulation skills.',
-        'Detail-oriented approach to financial and social audits.'
-      ]
-    },
-    {
-      id: 'job-4',
-      title: 'Donor Relations & Communications Lead',
-      department: 'Communications',
-      location: 'Bengaluru / Hybrid',
-      type: 'Full-time',
-      experience: '3-6 Years',
-      salary: '₹6.0 - ₹8.0 LPA',
-      description: 'Manage institutional and retail fundraising campaigns, draft CSR brochures, and tell powerful impact stories to corporate committees.',
-      requirements: [
-        'Degree in Public Relations, Journalism, Marketing, or Business Development.',
-        'Exceptional written and oral presentation skills in English.',
-        'Prior experience in fundraising, donor management, or CSR sales.',
-        'Knowledge of Canva, Mailchimp, and CRM systems.'
-      ]
-    },
-    {
-      id: 'job-5',
-      title: 'Finance & Compliance Executive',
-      department: 'Finance',
-      location: 'Hubballi, Karnataka',
-      type: 'Full-time',
-      experience: '3-5 Years',
-      salary: '₹5.0 - ₹7.0 LPA',
-      description: 'Maintain strict accounts, coordinate quarterly independent audits, and draft MCA CSR utilization certificates for corporate partners.',
-      requirements: [
-        'B.Com/M.Com/Inter-CA with deep understanding of NGO finances.',
-        'Familiarity with Section 80G, 12A, CSR-1, and NGO Darpan reporting guidelines.',
-        'Hands-on expertise in Tally Prime, GST, and TDS filings.',
-        'High degree of transparency and detail orientation.'
-      ]
-    },
-    {
-      id: 'job-6',
-      title: 'Agricultural Extension Officer',
-      department: 'Programs',
-      location: 'Haveri, Karnataka',
-      type: 'Full-time',
-      experience: '1-3 Years',
-      salary: '₹3.5 - ₹4.8 LPA',
-      description: 'Advise smallholder farmers on climate-resilient agriculture, drip irrigation, and sustainable crop cycles on the field.',
-      requirements: [
-        'B.Sc in Agriculture, Horticulture, or Agronomy.',
-        'Excellent practical understanding of Karnataka rainfed agricultural constraints.',
-        'Strong relational skills to communicate with marginal farming households.',
-        'Familiarity with organic farming formulations.'
-      ]
+  // Job openings initialized from shared database (localStorage)
+  const [jobs, setJobs] = useState<JobOpening[]>(() => {
+    const saved = localStorage.getItem('raita_mitra_jobs');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error(e);
+      }
     }
-  ]);
+    return [
+      {
+        id: 'job-1',
+        title: 'Rural Program Coordinator',
+        department: 'Programs',
+        location: 'Hubballi, Karnataka',
+        type: 'Full-time',
+        experience: '2-4 Years',
+        salary: '₹4.5 - ₹6.0 LPA',
+        description: 'Lead grassroots execution of sustainable agriculture and women self-help circle programs in Dharwad and Gadag districts.',
+        requirements: [
+          'Master’s degree in Social Work (MSW), Agriculture, Rural Development, or related disciplines.',
+          'Fluency in Kannada and English is mandatory.',
+          'Willingness to travel extensively to rural communities.',
+          'Experience coordinating with local government stakeholders.'
+        ]
+      },
+      {
+        id: 'job-2',
+        title: 'Digital & AI Skill Lab Mentor',
+        department: 'Technology',
+        location: 'Belagavi, Karnataka',
+        type: 'Full-time',
+        experience: '1-3 Years',
+        salary: '₹3.6 - ₹5.0 LPA',
+        description: 'Train rural youth in foundational digital skills, coding literacy, and AI applications to bridge the digital divide.',
+        requirements: [
+          'B.Tech/BCA/B.Sc in Computer Science or equivalent field experience.',
+          'Strong knowledge of digital workflows, basic frontend, and AI tools (ChatGPT, Gemini API, Canva).',
+          'Passion for teaching and community development.',
+          'Ability to translate technical jargon into simple Kannada/English.'
+        ]
+      },
+      {
+        id: 'job-3',
+        title: 'Impact Monitoring & Evaluation Associate',
+        department: 'Monitoring & Evaluation',
+        location: 'Hubballi, Karnataka',
+        type: 'Full-time',
+        experience: '2-5 Years',
+        salary: '₹4.0 - ₹5.5 LPA',
+        description: 'Design and implement scientific monitoring frameworks to measure project effectiveness and write comprehensive audit reports.',
+        requirements: [
+          'Degree in Statistics, Economics, Social Sciences, or Data Science.',
+          'Proficiency in Excel, SPSS, or mobile data collection platforms (KoboToolbox, ODK).',
+          'Strong report-writing and narrative formulation skills.',
+          'Detail-oriented approach to financial and social audits.'
+        ]
+      },
+      {
+        id: 'job-4',
+        title: 'Donor Relations & Communications Lead',
+        department: 'Communications',
+        location: 'Bengaluru / Hybrid',
+        type: 'Full-time',
+        experience: '3-6 Years',
+        salary: '₹6.0 - ₹8.0 LPA',
+        description: 'Manage institutional and retail fundraising campaigns, draft CSR brochures, and tell powerful impact stories to corporate committees.',
+        requirements: [
+          'Degree in Public Relations, Journalism, Marketing, or Business Development.',
+          'Exceptional written and oral presentation skills in English.',
+          'Prior experience in fundraising, donor management, or CSR sales.',
+          'Knowledge of Canva, Mailchimp, and CRM systems.'
+        ]
+      },
+      {
+        id: 'job-5',
+        title: 'Finance & Compliance Executive',
+        department: 'Finance',
+        location: 'Hubballi, Karnataka',
+        type: 'Full-time',
+        experience: '3-5 Years',
+        salary: '₹5.0 - ₹7.0 LPA',
+        description: 'Maintain strict accounts, coordinate quarterly independent audits, and draft MCA CSR utilization certificates for corporate partners.',
+        requirements: [
+          'B.Com/M.Com/Inter-CA with deep understanding of NGO finances.',
+          'Familiarity with Section 80G, 12A, CSR-1, and NGO Darpan reporting guidelines.',
+          'Hands-on expertise in Tally Prime, GST, and TDS filings.',
+          'High degree of transparency and detail orientation.'
+        ]
+      },
+      {
+        id: 'job-6',
+        title: 'Agricultural Extension Officer',
+        department: 'Programs',
+        location: 'Haveri, Karnataka',
+        type: 'Full-time',
+        experience: '1-3 Years',
+        salary: '₹3.5 - ₹4.8 LPA',
+        description: 'Advise smallholder farmers on climate-resilient agriculture, drip irrigation, and sustainable crop cycles on the field.',
+        requirements: [
+          'B.Sc in Agriculture, Horticulture, or Agronomy.',
+          'Excellent practical understanding of Karnataka rainfed agricultural constraints.',
+          'Strong relational skills to communicate with marginal farming households.',
+          'Familiarity with organic farming formulations.'
+        ]
+      }
+    ];
+  });
+
+  // Keep jobs list synced in real-time when localStorage updates
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem('raita_mitra_jobs');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setJobs(parsed);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    // Also run on mount to capture any stale state
+    handleStorageChange();
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Pop-up direct application form states
+  const [isApplyPopupOpen, setIsApplyPopupOpen] = useState<boolean>(false);
+  const [popupJob, setPopupJob] = useState<JobOpening | null>(null);
+  const [popupFormData, setPopupFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    city: '',
+    linkedin: '',
+    experience: '1-3 Years',
+    qualification: 'Post Graduate',
+    resumeName: '',
+    coverLetter: '',
+    message: ''
+  });
+  const [popupErrors, setPopupErrors] = useState<Record<string, string>>({});
+  const [isPopupSubmitting, setIsPopupSubmitting] = useState<boolean>(false);
+  const [popupSubmitted, setPopupSubmitted] = useState<boolean>(false);
+  const [popupAtsScore, setPopupAtsScore] = useState<number | null>(null);
 
   // ATS Multi-Step Form States
   const [formStep, setFormStep] = useState<number>(1);
@@ -199,6 +251,7 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
   const [atsScore, setAtsScore] = useState<number | null>(null);
   const [isAtsAnalyzing, setIsAtsAnalyzing] = useState<boolean>(false);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Scalability Features Simulation State
   const [hrFeatures, setHrFeatures] = useState({
@@ -208,19 +261,6 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
     enableLinkedInSync: true,
     enableCandidateDashboard: false,
     enableAIResumeScreening: true
-  });
-
-  // Dynamic user job adding (CMS simulator)
-  const [isAddingJob, setIsAddingJob] = useState<boolean>(false);
-  const [newJob, setNewJob] = useState({
-    title: '',
-    department: 'Programs',
-    location: 'Hubballi, Karnataka',
-    type: 'Full-time',
-    experience: '0-2 Years',
-    salary: 'Negotiable',
-    description: '',
-    requirements: ''
   });
 
   // Carousel index for Testimonials
@@ -299,6 +339,9 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
       const fileName = e.target.files[0].name;
       setFormData(prev => ({ ...prev, resumeName: fileName }));
       setResumeFileSelected(true);
+      if (formErrors.resumeName) {
+        setFormErrors(prev => ({ ...prev, resumeName: '' }));
+      }
       
       // Automatically trigger an "AI ATS Screen simulation" for interactive engagement
       setIsAtsAnalyzing(true);
@@ -313,6 +356,36 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
   };
 
   const handleApplyNextStep = () => {
+    const errors: Record<string, string> = {};
+    if (formStep === 1) {
+      if (!formData.fullName.trim()) {
+        errors.fullName = 'Full Name is required';
+      } else if (formData.fullName.trim().length < 2) {
+        errors.fullName = 'Please enter a valid full name';
+      }
+
+      if (!formData.email.trim()) {
+        errors.email = 'Email address is required';
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        errors.email = 'Please enter a valid email address';
+      }
+
+      if (!formData.phone.trim()) {
+        errors.phone = 'Phone number is required';
+      } else if (!/^\+?[0-9\s-]{10,14}$/.test(formData.phone)) {
+        errors.phone = 'Please enter a valid 10-12 digit phone number';
+      }
+
+      if (!formData.city.trim()) {
+        errors.city = 'Current City is required';
+      }
+
+      setFormErrors(errors);
+      if (Object.keys(errors).length > 0) return;
+    } else if (formStep === 2) {
+      setFormErrors({});
+    }
+
     if (formStep < 3) {
       setFormStep(prev => prev + 1);
     }
@@ -326,10 +399,69 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.fullName || !formData.email || !formData.phone) {
-      alert("Please fill in all mandatory fields before submitting.");
+    const errors: Record<string, string> = {};
+
+    if (!formData.fullName.trim()) {
+      errors.fullName = 'Full Name is required';
+    }
+    if (!formData.email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^\+?[0-9\s-]{10,14}$/.test(formData.phone)) {
+      errors.phone = 'Please enter a valid 10-12 digit phone number';
+    }
+    if (!formData.city.trim()) {
+      errors.city = 'Current City is required';
+    }
+    if (!formData.resumeName) {
+      errors.resumeName = 'Please upload your resume';
+    }
+
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      if (errors.fullName || errors.email || errors.phone || errors.city) {
+        setFormStep(1);
+      } else if (errors.resumeName) {
+        setFormStep(3);
+      }
       return;
     }
+
+    // POST main career application to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Career Application',
+        name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        subject: `Application for ${formData.position}`,
+        message: formData.coverLetter || formData.message || 'Submitted via multi-step application wizard.',
+        metadata: {
+          city: formData.city,
+          linkedin: formData.linkedin,
+          position: formData.position,
+          experience: formData.experience,
+          qualification: formData.qualification,
+          resumeName: formData.resumeName,
+          atsScore: atsScore
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Career application logged to server:', data);
+    })
+    .catch(err => {
+      console.error('Error logging career application:', err);
+    });
+
     setFormSubmitted(true);
   };
 
@@ -348,41 +480,13 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
       message: ''
     });
     setFormStep(1);
+    setFormErrors({});
     setResumeFileSelected(false);
     setAtsScore(null);
     setFormSubmitted(false);
   };
 
-  // Add job from CMS simulator
-  const handleAddJobSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newJob.title || !newJob.description) return;
 
-    const newJobObj: JobOpening = {
-      id: `custom-job-${Date.now()}`,
-      title: newJob.title,
-      department: newJob.department,
-      location: newJob.location,
-      type: newJob.type,
-      experience: newJob.experience,
-      salary: newJob.salary,
-      description: newJob.description,
-      requirements: newJob.requirements.split(',').map(r => r.trim()).filter(Boolean)
-    };
-
-    setJobs(prev => [newJobObj, ...prev]);
-    setIsAddingJob(false);
-    setNewJob({
-      title: '',
-      department: 'Programs',
-      location: 'Hubballi, Karnataka',
-      type: 'Full-time',
-      experience: '0-2 Years',
-      salary: 'Negotiable',
-      description: '',
-      requirements: ''
-    });
-  };
 
   return (
     <div className={`w-full overflow-hidden ${highContrast ? 'bg-black text-white' : 'bg-slate-50 text-slate-800'}`}>
@@ -433,20 +537,30 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
 
           {/* CTA Buttons */}
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <a 
-              href="#openings-section" 
-              className="px-6 py-3 bg-gold hover:bg-yellow-500 text-slate-950 font-semibold text-sm rounded-xl transition-all shadow-lg shadow-gold/20 flex items-center gap-2"
+            <button 
+              onClick={() => {
+                const sect = document.getElementById('openings-section');
+                if (sect) {
+                  sect.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="px-6 py-3 bg-gold hover:bg-yellow-500 text-slate-950 font-semibold text-sm rounded-xl transition-all shadow-lg shadow-gold/20 flex items-center gap-2 cursor-pointer"
             >
               <Briefcase size={16} />
               <span>View Open Positions</span>
-            </a>
-            <a 
-              href="#apply-section" 
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 hover:text-white text-white font-semibold text-sm rounded-xl transition-all border border-emerald-500/30 flex items-center gap-2"
+            </button>
+            <button 
+              onClick={() => {
+                const sect = document.getElementById('apply-section');
+                if (sect) {
+                  sect.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 hover:text-white text-white font-semibold text-sm rounded-xl transition-all border border-emerald-500/30 flex items-center gap-2 cursor-pointer"
             >
               <FileText size={16} />
               <span>Apply Now</span>
-            </a>
+            </button>
           </div>
         </div>
       </section>
@@ -484,154 +598,17 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
           </div>
         </section>
 
-        {/* 3. CURRENT OPENINGS SECTION: Live Job Board (CMS Simulator) */}
+        {/* 3. CURRENT OPENINGS SECTION: Live Job Board */}
         <section id="openings-section" className="space-y-8 scroll-mt-20">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div className="space-y-2">
               <span className="text-xs font-mono uppercase tracking-wider text-emerald-600 font-bold">Opportunities List</span>
               <h2 className="text-2xl md:text-3xl font-display font-bold text-slate-900">Current Openings</h2>
               <p className="text-sm text-slate-500">
-                Find your perfect matching role or create a new one. All standard jobs are fully audited.
+                Find your perfect matching role. All job openings are fully audited and synchronized.
               </p>
             </div>
-            
-            {/* Dynamic Custom Job Poster (CMS Simulator) Trigger */}
-            <button
-              onClick={() => setIsAddingJob(!isAddingJob)}
-              className="px-4 py-2.5 bg-emerald-900 text-white text-xs font-bold rounded-xl flex items-center gap-2 hover:bg-emerald-800 transition-colors shadow-sm cursor-pointer"
-            >
-              <Plus size={14} />
-              <span>Post New Role (CMS Simulator)</span>
-            </button>
           </div>
-
-          {/* Simulated Job Creator Modal */}
-          <AnimatePresence>
-            {isAddingJob && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 shadow-inner"
-              >
-                <form onSubmit={handleAddJobSubmit} className="space-y-4">
-                  <h3 className="font-bold text-sm text-emerald-900 flex items-center gap-2">
-                    <Sparkles size={14} className="text-gold" />
-                    Dynamic CMS Posting Engine
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Job Title *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        placeholder="e.g. CSR Partnership Director"
-                        value={newJob.title}
-                        onChange={(e) => setNewJob(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white rounded-lg border text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Department</label>
-                      <select 
-                        value={newJob.department}
-                        onChange={(e) => setNewJob(prev => ({ ...prev, department: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white rounded-lg border text-xs outline-none"
-                      >
-                        <option value="Programs">Programs</option>
-                        <option value="Operations">Operations</option>
-                        <option value="Finance">Finance</option>
-                        <option value="Communications">Communications</option>
-                        <option value="Technology">Technology</option>
-                        <option value="Monitoring &amp; Evaluation">M&amp;E</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Location</label>
-                      <input 
-                        type="text" 
-                        value={newJob.location}
-                        onChange={(e) => setNewJob(prev => ({ ...prev, location: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white rounded-lg border text-xs outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Employment Type</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Full-time / Internship"
-                        value={newJob.type}
-                        onChange={(e) => setNewJob(prev => ({ ...prev, type: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white rounded-lg border text-xs outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Experience Required</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. 1-2 Years / Freshers"
-                        value={newJob.experience}
-                        onChange={(e) => setNewJob(prev => ({ ...prev, experience: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white rounded-lg border text-xs outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Estimated CTC</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. ₹4.0 - ₹6.0 LPA"
-                        value={newJob.salary}
-                        onChange={(e) => setNewJob(prev => ({ ...prev, salary: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white rounded-lg border text-xs outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Short Description *</label>
-                    <textarea 
-                      required 
-                      rows={2}
-                      placeholder="Detail the core objectives of this role..."
-                      value={newJob.description}
-                      onChange={(e) => setNewJob(prev => ({ ...prev, description: e.target.value }))}
-                      className="w-full px-3 py-2 bg-white rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Key Requirements (Comma Separated)</label>
-                    <input 
-                      type="text" 
-                      placeholder="Degree in Agronomy, Fluent Kannada, Drip design experience..."
-                      value={newJob.requirements}
-                      onChange={(e) => setNewJob(prev => ({ ...prev, requirements: e.target.value }))}
-                      className="w-full px-3 py-2 bg-white rounded-lg border text-xs outline-none"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2">
-                    <button 
-                      type="button" 
-                      onClick={() => setIsAddingJob(false)}
-                      className="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      type="submit" 
-                      className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
-                    >
-                      Publish to Portal
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Job Filter Tabs Bar */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-slate-100">
@@ -686,8 +663,6 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
                       </span>
                       <span>•</span>
                       <span>Exp: {job.experience}</span>
-                      <span>•</span>
-                      <span className="text-emerald-700 font-semibold">{job.salary}</span>
                     </div>
 
                     <p className="text-xs text-slate-600 leading-relaxed pt-2 line-clamp-3">
@@ -703,16 +678,30 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
                       <span>View Requirements</span>
                       <ChevronRight size={14} />
                     </button>
-                    <a
-                      href="#apply-section"
+                    <button
                       onClick={() => {
-                        setFormData(prev => ({ ...prev, position: job.title }));
-                        setFormStep(1);
+                        setPopupJob(job);
+                        setPopupFormData({
+                          fullName: '',
+                          email: '',
+                          phone: '',
+                          city: '',
+                          linkedin: '',
+                          experience: job.experience,
+                          qualification: 'Post Graduate',
+                          resumeName: '',
+                          coverLetter: '',
+                          message: ''
+                        });
+                        setPopupErrors({});
+                        setPopupAtsScore(null);
+                        setPopupSubmitted(false);
+                        setIsApplyPopupOpen(true);
                       }}
                       className="px-4 py-2 bg-slate-900 hover:bg-emerald-600 hover:text-white text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
                     >
                       Apply Directly
-                    </a>
+                    </button>
                   </div>
                 </div>
               ))
@@ -746,8 +735,6 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
                     <span>{selectedJob.location}</span>
                     <span>•</span>
                     <span>{selectedJob.type}</span>
-                    <span>•</span>
-                    <span className="text-emerald-700 font-bold">{selectedJob.salary}</span>
                   </div>
                 </div>
 
@@ -777,18 +764,428 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
                   >
                     Close
                   </button>
-                  <a 
-                    href="#apply-section"
+                  <button 
                     onClick={() => {
-                      setFormData(prev => ({ ...prev, position: selectedJob.title }));
+                      const jobToApply = selectedJob;
                       setSelectedJob(null);
-                      setFormStep(1);
+                      setPopupJob(jobToApply);
+                      setPopupFormData({
+                        fullName: '',
+                        email: '',
+                        phone: '',
+                        city: '',
+                        linkedin: '',
+                        experience: jobToApply?.experience || '1-3 Years',
+                        qualification: 'Post Graduate',
+                        resumeName: '',
+                        coverLetter: '',
+                        message: ''
+                      });
+                      setPopupErrors({});
+                      setPopupAtsScore(null);
+                      setPopupSubmitted(false);
+                      setIsApplyPopupOpen(true);
                     }}
                     className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
                   >
                     Apply Now
-                  </a>
+                  </button>
                 </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Dynamic Apply Directly Pop-up Modal with Full Validation */}
+        <AnimatePresence>
+          {isApplyPopupOpen && popupJob && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs overflow-y-auto">
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0, y: 15 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 15 }}
+                className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-6 shadow-2xl relative my-8 text-slate-800"
+              >
+                {/* Close Button */}
+                <button 
+                  onClick={() => {
+                    setIsApplyPopupOpen(false);
+                    setPopupJob(null);
+                  }}
+                  className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+
+                {!popupSubmitted ? (
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      
+                      // Full Client-side validations
+                      const errors: Record<string, string> = {};
+                      if (!popupFormData.fullName.trim()) {
+                        errors.fullName = 'Full Name is required';
+                      }
+                      if (!popupFormData.email.trim()) {
+                        errors.email = 'Email address is required';
+                      } else if (!/\S+@\S+\.\S+/.test(popupFormData.email)) {
+                        errors.email = 'Please enter a valid email address';
+                      }
+                      if (!popupFormData.phone.trim()) {
+                        errors.phone = 'Phone number is required';
+                      } else if (!/^\+?[0-9\s-]{10,14}$/.test(popupFormData.phone)) {
+                        errors.phone = 'Please enter a valid 10-12 digit phone number';
+                      }
+                      if (!popupFormData.city.trim()) {
+                        errors.city = 'City / Location is required';
+                      }
+                      if (!popupFormData.resumeName) {
+                        errors.resumeName = 'Please upload your resume';
+                      }
+
+                      setPopupErrors(errors);
+                      if (Object.keys(errors).length === 0) {
+                        // POST direct application popup to Server backend
+                        fetch('/api/submissions', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            formType: 'Career Application',
+                            name: popupFormData.fullName,
+                            email: popupFormData.email,
+                            phone: popupFormData.phone,
+                            subject: `Direct Application for ${popupJob.title}`,
+                            message: popupFormData.coverLetter || popupFormData.message || 'Direct modal application.',
+                            metadata: {
+                              city: popupFormData.city,
+                              linkedin: popupFormData.linkedin,
+                              position: popupJob.title,
+                              department: popupJob.department,
+                              experience: popupFormData.experience,
+                              qualification: popupFormData.qualification,
+                              resumeName: popupFormData.resumeName,
+                              atsScore: popupAtsScore
+                            }
+                          })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                          console.log('Direct application logged to server:', data);
+                        })
+                        .catch(err => {
+                          console.error('Error logging direct application:', err);
+                        });
+
+                        setPopupSubmitted(true);
+                      }
+                    }} 
+                    className="space-y-6 text-left"
+                  >
+                    {/* Header */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-mono uppercase bg-amber-50 text-amber-800 px-3 py-1 rounded-full font-bold">
+                        Direct Application Portal
+                      </span>
+                      <h3 className="text-2xl font-display font-bold text-slate-900 pt-1">
+                        Apply for <span className="text-emerald-700">{popupJob.title}</span>
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        {popupJob.department} Department • {popupJob.location} • {popupJob.type}
+                      </p>
+                    </div>
+
+                    {/* Form Fields Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Name */}
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            placeholder="Enter your full name"
+                            value={popupFormData.fullName}
+                            onChange={(e) => {
+                              setPopupFormData(prev => ({ ...prev, fullName: e.target.value }));
+                              if (popupErrors.fullName) setPopupErrors(prev => ({ ...prev, fullName: '' }));
+                            }}
+                            className={`w-full px-3 py-2.5 bg-white rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${
+                              popupErrors.fullName ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20' : 'border-slate-200 text-slate-800'
+                            }`}
+                          />
+                        </div>
+                        {popupErrors.fullName && (
+                          <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>{popupErrors.fullName}</span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Email */}
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
+                        <input 
+                          type="email" 
+                          placeholder="e.g. name@example.com"
+                          value={popupFormData.email}
+                          onChange={(e) => {
+                            setPopupFormData(prev => ({ ...prev, email: e.target.value }));
+                            if (popupErrors.email) setPopupErrors(prev => ({ ...prev, email: '' }));
+                          }}
+                          className={`w-full px-3 py-2.5 bg-white rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${
+                            popupErrors.email ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20' : 'border-slate-200 text-slate-800'
+                          }`}
+                        />
+                        {popupErrors.email && (
+                          <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>{popupErrors.email}</span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Phone */}
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number *</label>
+                        <input 
+                          type="text" 
+                          placeholder="10-digit mobile number"
+                          value={popupFormData.phone}
+                          onChange={(e) => {
+                            setPopupFormData(prev => ({ ...prev, phone: e.target.value }));
+                            if (popupErrors.phone) setPopupErrors(prev => ({ ...prev, phone: '' }));
+                          }}
+                          className={`w-full px-3 py-2.5 bg-white rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${
+                            popupErrors.phone ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20' : 'border-slate-200 text-slate-800'
+                          }`}
+                        />
+                        {popupErrors.phone && (
+                          <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>{popupErrors.phone}</span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* City */}
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">City / Location *</label>
+                        <input 
+                          type="text" 
+                          placeholder="Current city"
+                          value={popupFormData.city}
+                          onChange={(e) => {
+                            setPopupFormData(prev => ({ ...prev, city: e.target.value }));
+                            if (popupErrors.city) setPopupErrors(prev => ({ ...prev, city: '' }));
+                          }}
+                          className={`w-full px-3 py-2.5 bg-white rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${
+                            popupErrors.city ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20' : 'border-slate-200 text-slate-800'
+                          }`}
+                        />
+                        {popupErrors.city && (
+                          <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>{popupErrors.city}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Experience */}
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Total Experience *</label>
+                        <select
+                          value={popupFormData.experience}
+                          onChange={(e) => setPopupFormData(prev => ({ ...prev, experience: e.target.value }))}
+                          className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                        >
+                          <option value="Fresher">Fresher / Graduate</option>
+                          <option value="1-3 Years">1-3 Years</option>
+                          <option value="3-5 Years">3-5 Years</option>
+                          <option value="5+ Years">5+ Years</option>
+                        </select>
+                      </div>
+
+                      {/* Qualification */}
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Highest Qualification *</label>
+                        <select
+                          value={popupFormData.qualification}
+                          onChange={(e) => setPopupFormData(prev => ({ ...prev, qualification: e.target.value }))}
+                          className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                        >
+                          <option value="Graduate">Bachelor's Degree (B.Sc/BA/B.Com)</option>
+                          <option value="Post Graduate">Master's Degree (MSW/M.Sc/MBA)</option>
+                          <option value="Doctorate">Doctorate / Ph.D.</option>
+                          <option value="Undergraduate">Undergraduate / Diploma</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* LinkedIn Profile */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">LinkedIn Profile URL (Optional)</label>
+                      <input 
+                        type="url" 
+                        placeholder="https://linkedin.com/in/username"
+                        value={popupFormData.linkedin}
+                        onChange={(e) => setPopupFormData(prev => ({ ...prev, linkedin: e.target.value }))}
+                        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                      />
+                    </div>
+
+                    {/* Resume Upload Drag & Drop */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Upload Resume (PDF, DOCX) *</label>
+                      <div className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all relative ${
+                        popupErrors.resumeName 
+                          ? 'border-rose-400 bg-rose-50/10 hover:border-rose-500' 
+                          : 'border-slate-200 hover:border-emerald-500 hover:bg-slate-50'
+                      }`}>
+                        <input 
+                          type="file" 
+                          accept=".pdf,.doc,.docx"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              const fileName = e.target.files[0].name;
+                              setPopupFormData(prev => ({ ...prev, resumeName: fileName }));
+                              if (popupErrors.resumeName) setPopupErrors(prev => ({ ...prev, resumeName: '' }));
+                              
+                              // Trigger AI Screening simulation score
+                              setIsPopupSubmitting(true);
+                              setTimeout(() => {
+                                const isMatch = fileName.toLowerCase().includes('resume') || fileName.toLowerCase().includes('cv');
+                                const score = isMatch ? Math.floor(Math.random() * 15) + 82 : Math.floor(Math.random() * 20) + 70;
+                                setPopupAtsScore(score);
+                                setIsPopupSubmitting(false);
+                              }, 1200);
+                            }
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                        <Upload size={22} className="mx-auto text-slate-400 mb-2" />
+                        <span className="text-xs font-semibold text-slate-800 block">
+                          {popupFormData.resumeName || "Drag & drop your resume or click to upload"}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block mt-1">Supports PDF, DOC, DOCX up to 5MB</span>
+                      </div>
+                      {popupErrors.resumeName && (
+                        <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                          <AlertCircle size={10} />
+                          <span>{popupErrors.resumeName}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Live AI Screening feedback */}
+                    {isPopupSubmitting && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3">
+                        <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[11px] text-emerald-800 font-medium font-mono">Analyzing resume keywords against agrarian & M&E metrics...</span>
+                      </div>
+                    )}
+
+                    {!isPopupSubmitting && popupAtsScore !== null && (
+                      <div className="p-3.5 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles size={14} className="text-indigo-600" />
+                          <span className="text-[11px] text-slate-700 font-semibold font-mono">AI Resume Screening Complete:</span>
+                        </div>
+                        <span className="text-xs font-mono font-bold text-indigo-800">{popupAtsScore}% ATS Match Score</span>
+                      </div>
+                    )}
+
+                    {/* Cover Letter motivation */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Why do you want to join Raita Mitra Trust? (Optional)</label>
+                      <textarea 
+                        rows={3}
+                        placeholder="Tell us about your motivation for sustainable agricultural development..."
+                        value={popupFormData.coverLetter}
+                        onChange={(e) => setPopupFormData(prev => ({ ...prev, coverLetter: e.target.value }))}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                      />
+                    </div>
+
+                    {/* Submit and Cancel Button Panel */}
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setIsApplyPopupOpen(false);
+                          setPopupJob(null);
+                        }}
+                        className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit"
+                        disabled={isPopupSubmitting}
+                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-55"
+                      >
+                        <span>Submit Application</span>
+                        <Send size={12} />
+                      </button>
+                    </div>
+
+                  </form>
+                ) : (
+                  /* Success Feedback Panel inside Modal */
+                  <div className="py-8 text-center space-y-6">
+                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                      <CheckCircle2 size={36} className="animate-bounce" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-display font-bold text-slate-900">Application Submitted!</h3>
+                      <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                        Thank you, <span className="font-semibold text-slate-900">{popupFormData.fullName}</span>. Your application for <span className="font-semibold text-emerald-800">{popupJob.title}</span> has been successfully logged.
+                      </p>
+                    </div>
+
+                    <div className="max-w-md mx-auto p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left space-y-3 font-mono text-[11px] text-slate-600">
+                      <div className="flex justify-between border-b border-dashed border-slate-200 pb-1.5">
+                        <span>Application Status:</span>
+                        <span className="font-bold text-emerald-700 uppercase">Received</span>
+                      </div>
+                      <div className="flex justify-between border-b border-dashed border-slate-200 pb-1.5">
+                        <span>Assigned Candidate ID:</span>
+                        <span className="font-semibold text-slate-900">RM-{Math.floor(100000 + Math.random() * 900000)}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-dashed border-slate-200 pb-1.5">
+                        <span>Position Applied:</span>
+                        <span className="font-semibold text-slate-900">{popupJob.title}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-dashed border-slate-200 pb-1.5">
+                        <span>Resume:</span>
+                        <span className="font-semibold text-slate-900">{popupFormData.resumeName}</span>
+                      </div>
+                      {popupAtsScore !== null && (
+                        <div className="flex justify-between">
+                          <span>ATS Screen Match:</span>
+                          <span className="font-bold text-indigo-700">{popupAtsScore}%</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      Our hiring managers will review your profile and contact you at <span className="font-semibold">{popupFormData.email}</span> within 7-10 business days.
+                    </p>
+
+                    <button 
+                      onClick={() => {
+                        setIsApplyPopupOpen(false);
+                        setPopupJob(null);
+                      }}
+                      className="px-6 py-2.5 bg-slate-900 hover:bg-emerald-600 hover:text-white text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md"
+                    >
+                      Close Application Portal
+                    </button>
+                  </div>
+                )}
               </motion.div>
             </div>
           )}
@@ -1140,23 +1537,43 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
                         <label className="block text-[11px] font-semibold text-slate-700 mb-1">Full Name *</label>
                         <input 
                           type="text" 
-                          required
                           placeholder="e.g. Ramesh Kumar"
                           value={formData.fullName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                          className="w-full px-3 py-2.5 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, fullName: e.target.value }));
+                            if (formErrors.fullName) setFormErrors(prev => ({ ...prev, fullName: '' }));
+                          }}
+                          className={`w-full px-3 py-2.5 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${
+                            formErrors.fullName ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20' : 'border-slate-200 text-slate-800'
+                          }`}
                         />
+                        {formErrors.fullName && (
+                          <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>{formErrors.fullName}</span>
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-[11px] font-semibold text-slate-700 mb-1">Email Address *</label>
                         <input 
                           type="email" 
-                          required
                           placeholder="ramesh@gmail.com"
                           value={formData.email}
-                          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                          className="w-full px-3 py-2.5 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, email: e.target.value }));
+                            if (formErrors.email) setFormErrors(prev => ({ ...prev, email: '' }));
+                          }}
+                          className={`w-full px-3 py-2.5 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${
+                            formErrors.email ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20' : 'border-slate-200 text-slate-800'
+                          }`}
                         />
+                        {formErrors.email && (
+                          <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>{formErrors.email}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -1165,23 +1582,43 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
                         <label className="block text-[11px] font-semibold text-slate-700 mb-1">Phone Number *</label>
                         <input 
                           type="tel" 
-                          required
                           placeholder="+91 98765 43210"
                           value={formData.phone}
-                          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                          className="w-full px-3 py-2.5 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, phone: e.target.value }));
+                            if (formErrors.phone) setFormErrors(prev => ({ ...prev, phone: '' }));
+                          }}
+                          className={`w-full px-3 py-2.5 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${
+                            formErrors.phone ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20' : 'border-slate-200 text-slate-800'
+                          }`}
                         />
+                        {formErrors.phone && (
+                          <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>{formErrors.phone}</span>
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-[11px] font-semibold text-slate-700 mb-1">Current City *</label>
                         <input 
                           type="text" 
-                          required
                           placeholder="e.g. Hubballi, Karnataka"
                           value={formData.city}
-                          onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                          className="w-full px-3 py-2.5 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, city: e.target.value }));
+                            if (formErrors.city) setFormErrors(prev => ({ ...prev, city: '' }));
+                          }}
+                          className={`w-full px-3 py-2.5 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-colors ${
+                            formErrors.city ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20' : 'border-slate-200 text-slate-800'
+                          }`}
                         />
+                        {formErrors.city && (
+                          <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                            <AlertCircle size={10} />
+                            <span>{formErrors.city}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -1192,7 +1629,7 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
                         placeholder="https://linkedin.com/in/username"
                         value={formData.linkedin}
                         onChange={(e) => setFormData(prev => ({ ...prev, linkedin: e.target.value }))}
-                        className="w-full px-3 py-2.5 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full px-3 py-2.5 border border-slate-200 text-slate-800 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500"
                       />
                     </div>
                   </motion.div>
@@ -1270,20 +1707,27 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
                     {/* Resume Drag & Drop Upload Simulator */}
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-700 mb-1">Resume Upload (PDF/DOCX) *</label>
-                      <div className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-2xl p-6 text-center cursor-pointer transition-colors relative">
+                      <div className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors relative ${
+                        formErrors.resumeName ? 'border-rose-400 bg-rose-50/20 hover:border-rose-500' : 'border-slate-200 hover:border-emerald-500 bg-white'
+                      }`}>
                         <input 
                           type="file" 
-                          required={!formData.resumeName}
                           accept=".pdf,.doc,.docx"
                           onChange={handleResumeChange}
                           className="absolute inset-0 opacity-0 cursor-pointer"
                         />
-                        <Upload size={24} className="mx-auto text-slate-400 mb-2" />
-                        <span className="text-xs font-semibold text-slate-800 block">
+                        <Upload size={24} className={`mx-auto mb-2 ${formErrors.resumeName ? 'text-rose-400' : 'text-slate-400'}`} />
+                        <span className={`text-xs font-semibold block ${formErrors.resumeName ? 'text-rose-700' : 'text-slate-800'}`}>
                           {formData.resumeName || "Drag & drop file or click to choose"}
                         </span>
                         <span className="text-[10px] text-slate-400 block mt-1">Accepted: PDF, DOC, DOCX up to 5MB</span>
                       </div>
+                      {formErrors.resumeName && (
+                        <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+                          <AlertCircle size={10} />
+                          <span>{formErrors.resumeName}</span>
+                        </p>
+                      )}
                     </div>
 
                     {/* AI Screening Live Simulation Feedback */}

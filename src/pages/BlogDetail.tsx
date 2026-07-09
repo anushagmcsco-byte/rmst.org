@@ -55,7 +55,10 @@ export default function BlogDetail({ slug, setActivePage, highContrast }: BlogDe
     try {
       const stored = localStorage.getItem('raita_mitra_blogs_list');
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed)) {
+          return parsed;
+        }
       }
     } catch (e) {
       console.error(e);

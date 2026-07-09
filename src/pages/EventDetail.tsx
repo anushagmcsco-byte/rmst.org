@@ -55,7 +55,10 @@ export default function EventDetail({ slug, setActivePage, highContrast }: Event
     try {
       const stored = localStorage.getItem('raita_mitra_events_list');
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed)) {
+          return parsed;
+        }
       }
     } catch (e) {
       console.error(e);
@@ -195,6 +198,37 @@ export default function EventDetail({ slug, setActivePage, highContrast }: Event
   const handleRegSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    // POST event registration to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Support Ticket',
+        name: regForm.fullName,
+        email: regForm.email,
+        phone: regForm.phone,
+        subject: `Event Specific Registration: ${event.title}`,
+        message: regForm.specialRequirements || `Registered for event specific: ${event.title}. City: ${regForm.city}. Category: ${regForm.category}`,
+        metadata: {
+          city: regForm.city,
+          organization: regForm.organization,
+          occupation: regForm.occupation,
+          category: regForm.category,
+          eventTitle: event.title,
+          participantsCount: regForm.participantsCount,
+          specialRequirements: regForm.specialRequirements
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Event specific registration logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging event specific registration:', err);
+    });
+
     setTimeout(() => {
       setIsSubmitting(false);
       setIsRegSubmitted(true);

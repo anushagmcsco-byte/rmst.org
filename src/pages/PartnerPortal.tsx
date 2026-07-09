@@ -307,6 +307,35 @@ export default function PartnerPortal({ highContrast }: PartnerPortalProps) {
 
   const handleCreateMeeting = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // POST partner meeting to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Partner Onboarding',
+        name: activeRoleDetails?.label || 'Authorized Corporate Partner',
+        email: 'esg@infosys-foundations.org',
+        phone: '+91 9886000000',
+        subject: `Schedule Meeting: ${scheduleForm.title}`,
+        message: `Requested platform review meeting. Target Platform: ${scheduleForm.platform}`,
+        metadata: {
+          date: scheduleForm.date,
+          time: scheduleForm.time,
+          platform: scheduleForm.platform,
+          roleId: currentRole,
+          roleLabel: activeRoleDetails?.label
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Partner meeting request logged to server:', data);
+    })
+    .catch(err => {
+      console.error('Error logging partner meeting request:', err);
+    });
+
     alert(`Meeting Confirmed on ${scheduleForm.date} at ${scheduleForm.time}!\nA secure invitation link with ${scheduleForm.platform} diagnostics has been synchronized with your corporate workspace calendar.`);
     setShowScheduleModal(false);
   };

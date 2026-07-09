@@ -240,6 +240,33 @@ export default function ResourceCentre({ highContrast }: { highContrast: boolean
   const handleRequestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmittingRequest(true);
+
+    // POST document access request to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Partner Onboarding',
+        name: reqForm.fullName,
+        email: reqForm.email,
+        phone: reqForm.phone,
+        subject: `Document Access Request: ${reqForm.requirement || reqForm.category}`,
+        message: reqForm.message || 'Requested custom programmatic audits and governance dossiers.',
+        metadata: {
+          organization: reqForm.organization,
+          category: reqForm.category,
+          requirement: reqForm.requirement
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Document access request logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging document access request:', err);
+    });
+
     setTimeout(() => {
       setIsSubmittingRequest(false);
       setRequestSubmitted(true);

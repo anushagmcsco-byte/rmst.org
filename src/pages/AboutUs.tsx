@@ -70,7 +70,38 @@ export default function AboutUs({ setActivePage, highContrast }: AboutUsProps) {
   const [showCSRModal, setShowCSRModal] = useState(false);
   const [csrEmail, setCsrEmail] = useState('');
   const [csrCompany, setCsrCompany] = useState('');
+  const [csrFocus, setCsrFocus] = useState('Sustainable Agriculture & Natural Input Mills');
   const [csrSubmitted, setCsrSubmitted] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail) return;
+
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Newsletter Signup',
+        name: 'Quarterly Audit Subscriber',
+        email: newsletterEmail,
+        phone: '',
+        subject: 'Quarterly Audit Dispatch Subscription',
+        message: 'Subscribed to Quarterly Audit Dispatch from About Us page.',
+        metadata: { page: 'About Us' }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Newsletter subscription logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging newsletter subscription:', err);
+    });
+
+    alert('Subscribed successfully to the quarterly audit newsletters.');
+    setNewsletterEmail('');
+  };
 
   useEffect(() => {
     setBoard(getBoardMembers());
@@ -176,6 +207,32 @@ export default function AboutUs({ setActivePage, highContrast }: AboutUsProps) {
     e.preventDefault();
     if (csrEmail && csrCompany) {
       setCsrSubmitted(true);
+
+      fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formType: 'Partner Onboarding',
+          name: csrCompany,
+          email: csrEmail,
+          phone: '',
+          subject: 'CSR Alliance Request',
+          message: `Requesting ESG Proposal Portfolio. Focus Area: ${csrFocus}`,
+          metadata: {
+            company: csrCompany,
+            focusArea: csrFocus,
+            requestType: 'CSR Proposal Kit'
+          }
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('CSR request logged:', data);
+      })
+      .catch(err => {
+        console.error('Error logging CSR request:', err);
+      });
+
       setTimeout(() => {
         setCsrSubmitted(false);
         setCsrEmail('');
@@ -622,13 +679,13 @@ export default function AboutUs({ setActivePage, highContrast }: AboutUsProps) {
         </div>
       </section>
 
-      {/* 7. LEADERSHIP SECTION (PREMIUM PROFILE CARDS - INTERACTIVE & EDITABLE) */}
+      {/* 7. LEADERSHIP SECTION (PREMIUM PROFILE CARDS - READ ONLY) */}
       <section className={`py-20 px-4 md:px-8 border-b ${
         highContrast ? 'bg-black text-white border-white' : 'bg-slate-50/50'
       }`} id="leadership-team">
         <div className="max-w-7xl mx-auto space-y-12">
           
-          {/* Header row with restore functionality */}
+          {/* Header row */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div className="text-left space-y-2 max-w-2xl">
               <span className="text-xs uppercase font-mono tracking-wider text-gold font-bold">Eminent Trustees</span>
@@ -638,20 +695,9 @@ export default function AboutUs({ setActivePage, highContrast }: AboutUsProps) {
                 Leadership Team
               </h2>
               <p className="text-slate-500 text-xs md:text-sm font-sans">
-                Raita Mitra is directed by an eminent panel of dryland agronomists, community mobilizers, retired micro-finance directors, and technology advisors. Click below to edit.
+                Raita Mitra is directed by an eminent panel of dryland agronomists, community mobilizers, retired micro-finance directors, and technology advisors.
               </p>
             </div>
-
-            <button 
-              onClick={handleResetBoard}
-              className={`px-3 py-2 text-xs font-bold rounded-xl border flex items-center gap-1.5 cursor-pointer transition-colors shrink-0 ${
-                highContrast ? 'border-white text-white hover:bg-white hover:text-black' : 'border-slate-200 text-slate-600 hover:bg-slate-50 bg-white'
-              }`}
-              title="Restore original biographies"
-            >
-              <RotateCcw size={13} />
-              Restore Official Bios
-            </button>
           </div>
 
           {/* Profile Cards Grid */}
@@ -662,9 +708,7 @@ export default function AboutUs({ setActivePage, highContrast }: AboutUsProps) {
                 className={`p-6 md:p-8 rounded-3xl border text-left flex flex-col md:flex-row gap-6 transition-all relative overflow-hidden ${
                   highContrast 
                     ? 'bg-black border-white text-white' 
-                    : editingId === member.id 
-                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-200 shadow-xl' 
-                      : 'bg-white border-slate-100 shadow-md'
+                    : 'bg-white border-slate-100 shadow-md'
                 }`}
                 id={`trustee-card-${member.id}`}
               >
@@ -687,128 +731,42 @@ export default function AboutUs({ setActivePage, highContrast }: AboutUsProps) {
                   </span>
                 </div>
 
-                {/* Content Panel / Editor Form */}
+                {/* Content Panel */}
                 <div className="flex-1 space-y-3 relative z-10">
-                  {editingId === member.id ? (
-                    
-                    /* Inline Editor UI */
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-[9px] font-bold text-amber-800 dark:text-amber-400 uppercase font-mono">Full Name</label>
-                        <input 
-                          type="text" 
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-lg bg-white dark:bg-black font-semibold outline-none"
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[9px] font-bold text-amber-800 dark:text-amber-400 uppercase font-mono">Board Designation</label>
-                          <input 
-                            type="text" 
-                            value={editRole}
-                            onChange={(e) => setEditRole(e.target.value)}
-                            className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-lg bg-white dark:bg-black outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[9px] font-bold text-amber-800 dark:text-amber-400 uppercase font-mono">Credentials</label>
-                          <input 
-                            type="text" 
-                            value={editQual}
-                            onChange={(e) => setEditQual(e.target.value)}
-                            className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-lg bg-white dark:bg-black outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[9px] font-bold text-amber-800 dark:text-amber-400 uppercase font-mono">Focus Area Tag</label>
-                        <input 
-                          type="text" 
-                          value={editFocus}
-                          onChange={(e) => setEditFocus(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-lg bg-white dark:bg-black outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[9px] font-bold text-amber-800 dark:text-amber-400 uppercase font-mono">Bio Narrative</label>
-                        <textarea 
-                          rows={3}
-                          value={editDesc}
-                          onChange={(e) => setEditDesc(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded-lg bg-white dark:bg-black outline-none font-sans leading-normal"
-                        />
-                      </div>
-
-                      <div className="flex gap-2 pt-1">
-                        <button 
-                          onClick={() => handleSaveEdit(member.id)}
-                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                        >
-                          <Check size={12} />
-                          Save Profile
-                        </button>
-                        <button 
-                          onClick={() => setEditingId(null)}
-                          className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[10px] font-bold cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                  <div className="space-y-3 text-left">
+                    <div>
+                      <h3 className={`font-display font-extrabold text-sm md:text-base ${
+                        highContrast ? 'text-white' : 'text-slate-800'
+                      }`}>
+                        {member.name}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        <span className={`font-extrabold ${highContrast ? 'text-white' : 'text-forest'}`}>{member.role}</span> — <span className="font-semibold text-[11px]">{member.qualification}</span>
+                      </p>
                     </div>
-                  ) : (
-                    
-                    /* Biographic Premium Display Card */
-                    <div className="space-y-3 text-left">
-                      <div>
-                        <h3 className={`font-display font-extrabold text-sm md:text-base ${
-                          highContrast ? 'text-white' : 'text-slate-800'
-                        }`}>
-                          {member.name}
-                        </h3>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          <span className={`font-extrabold ${highContrast ? 'text-white' : 'text-forest'}`}>{member.role}</span> — <span className="font-semibold text-[11px]">{member.qualification}</span>
-                        </p>
-                      </div>
 
-                      {member.focusArea && (
-                        <p className="text-[9px] font-mono bg-emerald-50 text-emerald-800 dark:bg-zinc-900 dark:text-emerald-300 px-2.5 py-1 rounded-md inline-block font-bold">
-                          Focus: {member.focusArea}
-                        </p>
+                    {member.focusArea && (
+                      <p className="text-[9px] font-mono bg-emerald-50 text-emerald-800 dark:bg-zinc-900 dark:text-emerald-300 px-2.5 py-1 rounded-md inline-block font-bold">
+                        Focus: {member.focusArea}
+                      </p>
+                    )}
+
+                    <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed font-sans">{member.description}</p>
+                    
+                    <div className="flex flex-wrap items-center gap-3.5 pt-2 border-t border-slate-100/80 dark:border-zinc-800/80">
+                      {member.linkedin && (
+                        <a 
+                          href={member.linkedin} 
+                          className="text-[10px] text-slate-400 hover:text-forest flex items-center gap-1 font-mono uppercase font-bold"
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                        >
+                          <Linkedin size={10} />
+                          LinkedIn
+                        </a>
                       )}
-
-                      <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed font-sans">{member.description}</p>
-                      
-                      <div className="flex flex-wrap items-center gap-3.5 pt-2 border-t border-slate-100/80 dark:border-zinc-800/80">
-                        <button 
-                          onClick={() => handleStartEdit(member)}
-                          className={`text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer ${
-                            highContrast ? 'text-white underline' : 'text-forest hover:text-forest-light'
-                          }`}
-                          aria-label={`Edit profile of ${member.name}`}
-                        >
-                          <Edit2 size={11} />
-                          Edit Profile
-                        </button>
-
-                        {member.linkedin && (
-                          <a 
-                            href={member.linkedin} 
-                            className="text-[10px] text-slate-400 hover:text-forest flex items-center gap-1 font-mono uppercase font-bold"
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                          >
-                            <Linkedin size={10} />
-                            LinkedIn
-                          </a>
-                        )}
-                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
 
               </div>
@@ -1287,10 +1245,12 @@ export default function AboutUs({ setActivePage, highContrast }: AboutUsProps) {
           </div>
 
           <div>
-            <form onSubmit={(e) => { e.preventDefault(); alert('Subscribed successfully to the quarterly audit newsletters.'); }} className="flex gap-2">
+            <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
               <input 
                 type="email" 
                 required
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter corporate or personal email ID" 
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800/50 text-white text-xs outline-none focus:border-gold font-sans"
               />
@@ -1343,7 +1303,11 @@ export default function AboutUs({ setActivePage, highContrast }: AboutUsProps) {
 
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase font-mono">Primary Focus Interventions</label>
-                <select className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 dark:bg-black text-xs outline-none">
+                <select 
+                  value={csrFocus}
+                  onChange={(e) => setCsrFocus(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 dark:bg-black text-xs outline-none"
+                >
                   <option>Sustainable Agriculture & Natural Input Mills</option>
                   <option>Women Dairy Co-operatives & Micro-loans</option>
                   <option>Solar-powered Computer Workstations in Schools</option>

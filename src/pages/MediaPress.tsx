@@ -214,7 +214,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Where can high-resolution media assets be downloaded?",
-    a: "You can download print-quality photos, logos, vector templates, and our standard brand color guidelines directly under the 'Media Resource Centre' and 'Brand Assets' grid sections on this page."
+    a: "Please fill out our Media Enquiries form below to request access to print-quality photos, logos, vector templates, and brand color guidelines."
   },
   {
     q: "How can media houses collaborate on reporting?",
@@ -261,6 +261,34 @@ export default function MediaPress({ highContrast }: { highContrast: boolean }) 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmittingContact(true);
+
+    // POST media query to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Partner Onboarding',
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        subject: `Media Press Query: ${form.subject || 'Media Request'}`,
+        message: form.message,
+        metadata: {
+          organization: form.organization,
+          designation: form.designation,
+          mediaType: form.mediaType,
+          deadline: form.deadline
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Media inquiry logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging media inquiry:', err);
+    });
+
     setTimeout(() => {
       setIsSubmittingContact(false);
       setContactSubmitted(true);
@@ -318,18 +346,9 @@ export default function MediaPress({ highContrast }: { highContrast: boolean }) 
 
           <div className="flex flex-wrap justify-center items-center gap-4 pt-4">
             <a 
-              href="#media-kit-downloads"
+              href="#media-enquiry-form"
               className={`px-6 py-3.5 rounded-xl font-display font-extrabold text-sm tracking-wide cursor-pointer flex items-center gap-2 transition-all shadow-lg hover:scale-[1.02] ${
                 highContrast ? 'bg-white text-black' : 'bg-gold hover:bg-gold-light text-slate-950'
-              }`}
-            >
-              <Download size={16} />
-              Download Media Kit
-            </a>
-            <a 
-              href="#media-enquiry-form"
-              className={`px-6 py-3.5 rounded-xl font-display font-extrabold text-sm tracking-wide cursor-pointer flex items-center gap-2 transition-all border border-white/20 hover:bg-white/10 ${
-                highContrast ? 'bg-black text-white border-2 border-white' : 'bg-white/5 text-white'
               }`}
             >
               Contact Media Team
@@ -472,55 +491,7 @@ export default function MediaPress({ highContrast }: { highContrast: boolean }) 
         </div>
       </section>
 
-      {/* 4. MEDIA COVERAGE SECTION */}
-      <section className="py-16 px-4 md:px-8 max-w-7xl mx-auto text-left" id="media-coverage">
-        <div className="mb-10">
-          <span className="text-xs font-mono font-black text-gold uppercase tracking-widest">EXTERNAL PUBLICATIONS</span>
-          <h2 className="font-display font-extrabold text-3xl text-slate-900 dark:text-white mt-1">
-            Media Coverage
-          </h2>
-          <p className="text-slate-500 font-sans text-xs mt-2">
-            Independent coverage of our community initiatives documented by mainstream journalism houses.
-          </p>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {MEDIA_COVERAGE.map((cov) => (
-            <div 
-              key={cov.id}
-              className={`p-6 rounded-3xl border flex flex-col justify-between min-h-[200px] transition-all hover:shadow-md ${
-                highContrast ? 'border-2 border-white bg-black' : 'bg-white border-slate-100 shadow-sm'
-              }`}
-            >
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="h-7 px-2.5 rounded bg-slate-900 flex items-center justify-center text-[10px] font-mono font-black text-gold tracking-wider">
-                    {cov.source}
-                  </div>
-                  <span className="text-[10px] font-mono text-slate-400">{cov.date}</span>
-                </div>
-                
-                <h3 className="font-display font-extrabold text-xs md:text-sm text-slate-800 dark:text-white leading-snug pt-2">
-                  "{cov.title}"
-                </h3>
-              </div>
-
-              <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex justify-between items-center text-[11px] font-mono">
-                <span className="text-slate-400">{cov.category}</span>
-                <a 
-                  href={cov.link}
-                  target="_blank"
-                  referrerPolicy="no-referrer"
-                  className="text-forest hover:underline inline-flex items-center gap-1 font-bold"
-                >
-                  Visit Link
-                  <ExternalLink size={12} />
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* 5. AWARDS & RECOGNITION SECTION */}
       <section className={`py-16 border-t border-b ${
@@ -658,61 +629,7 @@ export default function MediaPress({ highContrast }: { highContrast: boolean }) 
         </div>
       </section>
 
-      {/* 7. MEDIA RESOURCE CENTRE (DOWNLOADS) */}
-      <section className={`py-16 border-t border-b ${
-        highContrast ? 'bg-black border-slate-800' : 'bg-[#FAFAFA] border-slate-100'
-      }`} id="media-kit-downloads">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 text-left space-y-10">
-          <div>
-            <span className="text-xs font-mono font-black text-forest uppercase tracking-widest font-bold">JOURNALIST HELPDESK</span>
-            <h2 className="font-display font-extrabold text-3xl text-slate-900 dark:text-white mt-1">
-              Media Resource Centre
-            </h2>
-            <p className="text-slate-500 font-sans text-xs mt-1">
-              Print-quality corporate files, logo vectors, leader portraits, and verified brochures ready for immediate distribution.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {MEDIA_KIT_RESOURCES.map((res, idx) => {
-              const IconComp = res.icon;
-              return (
-                <div 
-                  key={idx}
-                  className={`p-6 rounded-3xl border flex items-start gap-4 transition-all hover:shadow-md ${
-                    highContrast ? 'border-2 border-white bg-black' : 'bg-white border-slate-100 shadow-sm'
-                  }`}
-                >
-                  <div className="p-3 rounded-2xl bg-forest/5 text-forest shrink-0">
-                    <IconComp size={22} />
-                  </div>
-
-                  <div className="space-y-3 flex-1 min-w-0">
-                    <div className="text-left">
-                      <h3 className="font-display font-extrabold text-sm md:text-base text-slate-800 dark:text-white truncate">
-                        {res.title}
-                      </h3>
-                      <p className="text-[10px] font-mono text-slate-400 mt-1">
-                        {res.type} | Size: <span className="font-bold text-slate-600">{res.size}</span>
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => alert(`Starting download for: ${res.title}`)}
-                      className={`px-3 py-1.5 rounded-lg font-mono font-bold text-[10px] inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
-                        highContrast ? 'bg-white text-black' : 'bg-slate-900 text-white hover:bg-slate-800'
-                      }`}
-                    >
-                      <Download size={11} />
-                      Download Asset
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* 8. LEADERSHIP PROFILES */}
       <section className="py-16 px-4 md:px-8 max-w-7xl mx-auto text-left" id="leadership-profiles">
@@ -1087,12 +1004,6 @@ export default function MediaPress({ highContrast }: { highContrast: boolean }) 
               }`}
             >
               Contact Media Team
-            </a>
-            <a 
-              href="#media-kit-downloads"
-              className="px-5 py-2.5 rounded-xl font-display font-semibold text-xs border border-white/20 hover:bg-white/10"
-            >
-              Download Media Kit
             </a>
           </div>
         </div>

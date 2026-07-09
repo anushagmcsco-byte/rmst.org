@@ -424,6 +424,34 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
       return;
     }
     setIsFormSubmitting(true);
+
+    // POST compliance inquiry to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Partner Onboarding',
+        name: inquiryForm.contactPerson,
+        email: inquiryForm.email,
+        phone: inquiryForm.phone,
+        subject: `CSR Compliance Inquiry: ${inquiryForm.orgName}`,
+        message: inquiryForm.message,
+        metadata: {
+          organization: inquiryForm.orgName,
+          designation: inquiryForm.designation,
+          focusArea: inquiryForm.focusArea,
+          budgetRange: inquiryForm.budgetRange,
+          state: inquiryForm.state
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Compliance inquiry logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging compliance inquiry:', err);
+    });
     
     setTimeout(() => {
       setIsFormSubmitting(false);
@@ -482,18 +510,11 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
 
           <div className="flex flex-wrap justify-center gap-4 pt-4">
             <button 
-              onClick={() => triggerDownloadSimulation('CSR Corporate Brochure 2026', 'csr_brochure')}
-              className="px-6 py-3 rounded-full text-xs md:text-sm font-bold bg-gold hover:bg-gold-light text-slate-950 cursor-pointer transition-all flex items-center gap-2"
-            >
-              <FileDown size={16} />
-              Download CSR Brochure
-            </button>
-            <button 
               onClick={() => {
                 const element = document.getElementById("partner-inquiry-section");
                 if (element) element.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="px-6 py-3 rounded-full text-xs md:text-sm font-bold border border-white/20 hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-2"
+              className="px-6 py-3 rounded-full text-xs md:text-sm font-bold bg-gold hover:bg-gold-light text-slate-950 cursor-pointer transition-all flex items-center gap-2"
             >
               Become A CSR Partner
               <ArrowRight size={16} />
@@ -550,47 +571,7 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
         </div>
       </section>
 
-      {/* 3. TRUST BADGES SECTION */}
-      <section className="py-12 max-w-7xl mx-auto px-4" id="trust-badges">
-        <div className="text-center space-y-2 mb-8">
-          <p className="text-[10px] font-mono tracking-widest text-slate-400 uppercase font-bold">STATUTORY AUDITING & APPROVALS</p>
-          <h2 className={`font-display font-extrabold text-lg md:text-2xl ${highContrast ? 'text-white' : 'text-slate-800'}`}>
-            Authorized Trust Registrations
-          </h2>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { name: "NGO Darpan", subtitle: "NITI Aayog Registered", code: "KA/2023/0342549", icon: ShieldCheck, desc: "Eligible for Central/State developmental projects" },
-            { name: "CSR-1 Registration", subtitle: "MCA Approved", code: "CSR00059487", icon: BadgeCheck, desc: "Certified for corporate CSR partnership grants" },
-            { name: "12A Registration", subtitle: "Income Tax Exemption", code: "Exempt Status", icon: FileBadge, desc: "Validates non-profit charity framework" },
-            { name: "80G Approval", subtitle: "Tax Benefit Certificate", code: "Donation Deductions", icon: ReceiptText, desc: "50% tax deductions for institutional funders" }
-          ].map((badge, idx) => (
-            <div 
-              key={idx}
-              className={`p-5 rounded-2xl border text-left flex flex-col justify-between transition-all hover:shadow-md ${
-                highContrast ? 'bg-black border-2 border-white' : 'bg-white border-slate-100 shadow-sm'
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/15">
-                  <badge.icon size={20} />
-                </div>
-                <span className="text-[8px] font-mono font-bold uppercase bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
-                  AUTHENTIC
-                </span>
-              </div>
-              <div className="mt-4">
-                <h3 className="text-sm font-bold text-slate-800 dark:text-white leading-tight font-display">{badge.name}</h3>
-                <p className="text-[10px] text-slate-400 font-mono font-semibold mt-0.5">{badge.subtitle}</p>
-                <p className="text-[11px] text-slate-500 mt-2 font-sans leading-relaxed">{badge.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. DOCUMENT REPOSITORY SECTOR (TABBED DASHBOARD) */}
+      {/* 3. DOCUMENT REPOSITORY SECTOR (TABBED DASHBOARD) */}
       <section className="py-20 max-w-7xl mx-auto px-4" id="document-repository">
         <div className="text-left space-y-3 mb-10 border-b border-slate-200/60 pb-6">
           <span className="text-xs font-mono tracking-widest text-gold font-bold uppercase">SECURED DATABASE</span>
@@ -608,10 +589,9 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
           <div className="lg:col-span-4 flex flex-col gap-2">
             {[
               { id: 'primary', label: 'Primary Registrations', desc: 'NGO Darpan, CSR-1, 12A, 80G, Trust Deed', icon: ShieldCheck },
-              { id: 'annual', label: 'Annual Reports', desc: 'Yearly milestones & narrative impact boards', icon: FileText },
+              { id: 'governance', label: 'Policies & Governance', desc: 'Whistleblower, child safeguarding, POSH', icon: Scale },
               { id: 'financials', label: 'Audited Financials', desc: 'Vetted Balance Sheets & Auditor remarks', icon: TrendingUp },
-              { id: 'tax-returns', label: 'Income Tax Returns', desc: 'Certified Form ITR-7 filings', icon: Calculator },
-              { id: 'governance', label: 'Policies & Governance', desc: 'Whistleblower, child safeguarding, POSH', icon: Scale }
+              { id: 'tax-returns', label: 'Income Tax Returns', desc: 'Certified Form ITR-7 filings', icon: Calculator }
             ].map((tab) => {
               const isSelected = activeRepositoryTab === tab.id;
               return (
@@ -716,60 +696,6 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
                       </div>
                     </div>
                   ))}
-                </motion.div>
-              )}
-
-              {activeRepositoryTab === 'annual' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-4"
-                  key="annual-tab"
-                >
-                  <div 
-                    onClick={() => toggleFolder('annual')}
-                    className={`p-4 rounded-2xl border text-left flex justify-between items-center cursor-pointer transition-colors ${
-                      highContrast ? 'bg-black border-white hover:bg-slate-900' : 'bg-slate-50 border-slate-200/60 hover:bg-slate-100'
-                    }`}
-                  >
-                    <div className="flex gap-3 items-center">
-                      <FileText size={20} className="text-emerald-700" />
-                      <div>
-                        <h4 className="text-xs md:text-sm font-bold font-display text-slate-800 dark:text-white">Annual Reports Directory</h4>
-                        <p className="text-[10px] text-slate-400">Expand folder to read verified corporate social milestone packages</p>
-                      </div>
-                    </div>
-                    {expandedFolders.annual ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  </div>
-
-                  {expandedFolders.annual && (
-                    <div className="pl-4 border-l border-emerald-900/10 space-y-3 pt-1">
-                      {ANNUAL_REPORTS_FILES.map((file, i) => (
-                        <div 
-                          key={i}
-                          className={`p-4 rounded-xl border text-left flex flex-col sm:flex-row justify-between sm:items-center gap-4 ${
-                            highContrast ? 'bg-black border-white' : 'bg-white border-slate-100 shadow-sm'
-                          }`}
-                        >
-                          <div>
-                            <h5 className="text-xs font-bold text-slate-800 dark:text-white font-display leading-snug">{file.name}</h5>
-                            <p className="text-[10px] font-mono text-slate-400 mt-1">Ref No: {file.ref} | Published: {file.date}</p>
-                          </div>
-                          <div className="flex items-center gap-3 self-end sm:self-auto">
-                            <span className="text-[9px] font-mono text-slate-400">{file.size}</span>
-                            <button 
-                              onClick={() => triggerDownloadSimulation(file.name, `ar_${i}`)}
-                              className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer flex items-center gap-1"
-                            >
-                              <Download size={10} />
-                              Download
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </motion.div>
               )}
 
@@ -939,7 +865,7 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
       </section>
 
       {/* 5. FUND UTILIZATION DASHBOARD (INTERACTIVE INFOGRAPHICS) */}
-      <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-white border-t border-b border-slate-200/40'}`} id="fund-utilization">
+      <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-white border-t border-b border-slate-200/40'}`} id="fund-utilization" style={{ display: 'none' }}>
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
             <span className="text-xs font-mono uppercase tracking-widest text-gold font-bold">LIVE METRIC HARVESTING</span>
@@ -1192,127 +1118,7 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
         </div>
       </section>
 
-      {/* 6. MONITORING & EVALUATION TIMELINE (FLOW DIAGRAM) */}
-      <section className="py-20 max-w-7xl mx-auto px-4" id="monitoring-evaluation">
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
-          <span className="text-xs uppercase font-mono tracking-widest text-gold font-bold">continuous quality checking</span>
-          <h2 className={`text-2xl md:text-4xl font-display font-extrabold ${highContrast ? 'text-white' : 'text-slate-900'}`}>
-            Monitoring & Evaluation Framework
-          </h2>
-          <p className="text-sm text-slate-500 max-w-xl mx-auto">
-            Our multi-tier logic model ensures that every rupee committed transforms into robust capability inside drought-prone taluks.
-          </p>
-        </div>
-
-        {/* Timeline Flow Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 relative" id="me-timeline-flow">
-          {ME_STEPS.map((step, idx) => (
-            <div 
-              key={idx}
-              className={`p-5 rounded-2xl border text-left flex flex-col justify-between relative group hover:-translate-y-1 transition-transform ${
-                highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/50 shadow-sm'
-              }`}
-            >
-              {/* Connector line overlay for desktop screen */}
-              {idx < 5 && (
-                <div className="hidden lg:block absolute top-1/2 -right-3.5 w-7 h-[1.5px] bg-slate-200 z-10"></div>
-              )}
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl font-mono font-black text-emerald-900/10 group-hover:text-emerald-900/20 transition-colors">
-                    {step.step}
-                  </span>
-                  <CheckCircle2 size={16} className="text-emerald-600" />
-                </div>
-                <h4 className="font-display font-extrabold text-sm text-slate-800 dark:text-white leading-tight">
-                  {step.title}
-                </h4>
-                <p className="text-[11px] text-slate-500 leading-relaxed font-sans">
-                  {step.desc}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 7. ESG & SDG ALIGNMENT (CARDS WITH OFFICIAL SDG REF) */}
-      <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-emerald-950/5 border-t border-b border-emerald-950/10'}`} id="esg-sdg-alignment">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
-            <span className="text-xs uppercase font-mono tracking-widest text-gold font-bold">UNITED NATIONS GLOBAL GOALS</span>
-            <h2 className={`text-2xl md:text-4xl font-display font-extrabold ${highContrast ? 'text-white' : 'text-slate-900'}`}>
-              ESG & SDG Alignment
-            </h2>
-            <p className="text-sm text-slate-500 max-w-xl mx-auto">
-              Our rural programs directly contribute to nine United Nations Sustainable Development Goals, creating compliant pathways for ESG investments.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SDG_ALIGNMENTS.map((sdg, idx) => (
-              <div 
-                key={idx}
-                className={`p-5 rounded-2xl border text-left flex gap-4 items-stretch ${
-                  highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/50 shadow-sm'
-                }`}
-              >
-                {/* Simulated colorful official SDG number block */}
-                <div className={`w-14 h-14 rounded-xl shrink-0 flex flex-col items-center justify-center font-display font-black text-lg ${sdg.color}`}>
-                  <span>{sdg.no}</span>
-                  <span className="text-[8px] uppercase tracking-tighter mt-[-4px]">goal</span>
-                </div>
-                <div className="space-y-1 flex flex-col justify-center">
-                  <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 font-bold">{sdg.code}</span>
-                  <h4 className="text-sm font-bold text-slate-800 dark:text-white font-display leading-tight">{sdg.name}</h4>
-                  <p className="text-xs text-slate-500 leading-normal font-sans">{sdg.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 8. REPORTING COMMITMENT TIMELINE CARDS */}
-      <section className="py-20 max-w-7xl mx-auto px-4" id="reporting-commitments">
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
-          <span className="text-xs uppercase font-mono tracking-widest text-gold font-bold">philanthropic assurances</span>
-          <h2 className={`text-2xl md:text-4xl font-display font-extrabold ${highContrast ? 'text-white' : 'text-slate-900'}`}>
-            Our Reporting Commitment
-          </h2>
-          <p className="text-sm text-slate-500 max-w-xl mx-auto font-sans leading-relaxed">
-            We provide institutional stakeholders with a reliable cadence of auditable narratives, accounting files, and telemetry sheets.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {REPORTING_COMMITMENTS.map((item, idx) => (
-            <div 
-              key={idx}
-              className={`p-6 rounded-3xl border text-left relative overflow-hidden group ${
-                highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/55 shadow-sm'
-              }`}
-            >
-              {/* Stylized background watermark number */}
-              <span className="absolute bottom-[-10px] right-2 font-display font-black text-6xl text-slate-100 dark:text-slate-900/10 pointer-events-none select-none z-0">
-                0{idx + 1}
-              </span>
-              <div className="relative z-10 space-y-3">
-                <div className="w-1.5 h-6 bg-gold rounded-full"></div>
-                <h4 className="font-display font-extrabold text-base text-slate-800 dark:text-white leading-tight">
-                  {item.title}
-                </h4>
-                <p className="text-xs text-slate-500 leading-relaxed font-sans">
-                  {item.desc}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 9. POLICIES & GOVERNANCE FRAMEWORK INTERACTIVE CARDS */}
+      {/* 4. POLICIES & GOVERNANCE FRAMEWORK INTERACTIVE CARDS */}
       <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-slate-50'}`} id="policies-framework">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
@@ -1365,7 +1171,7 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
         </div>
       </section>
 
-      {/* 10. CSR PARTNERSHIP JOURNEY INFOGRAPHIC */}
+      {/* 5. CSR PARTNERSHIP JOURNEY INFOGRAPHIC */}
       <section className="py-20 max-w-7xl mx-auto px-4" id="partnership-journey">
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
           <span className="text-xs uppercase font-mono tracking-widest text-gold font-bold">COLLABORATION STEPS</span>
@@ -1407,68 +1213,7 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
         </div>
       </section>
 
-      {/* 11. ANNUAL REPORTS SECTION (MAGAZINE STYLE CARDS) */}
-      <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-white border-t border-b border-slate-200/40'}`} id="annual-magazine-cards">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
-            <span className="text-xs uppercase font-mono tracking-widest text-gold font-bold">ANNUAL ARCHIVES</span>
-            <h2 className={`text-2xl md:text-4xl font-display font-extrabold ${highContrast ? 'text-white' : 'text-slate-900'}`}>
-              Annual Reports & Magazines
-            </h2>
-            <p className="text-sm text-slate-500 max-w-xl mx-auto">
-              Read our comprehensive publication-grade annual magazines containing extensive field maps, stakeholder notes, and accounting summaries.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {[
-              { year: 'FY 2025-26', subtitle: 'Leading with Solar & IT Labs', image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=800', desc: 'Detailed forecasts and milestone updates for our newly sanctioned drought mitigation corridors across Belagavi and Haveri.' },
-              { year: 'FY 2024-25', subtitle: 'Regenerative Milestones', image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=800', desc: 'Focuses on the transformation of 5,000 dryland families, establishing women dairy units, and implementing 140 recharge wells.' },
-              { year: 'FY 2023-24', subtitle: 'Sowing the Seeds', image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800', desc: 'Our baseline year report documenting original water index failures, school shortages, and setting the target indicators.' }
-            ].map((mag, idx) => (
-              <div 
-                key={idx}
-                className={`rounded-3xl overflow-hidden border text-left flex flex-col justify-between transition-all hover:shadow-lg ${
-                  highContrast ? 'bg-black border-2 border-white text-white' : 'bg-slate-50/50 border-slate-200/50 hover:-translate-y-1'
-                }`}
-              >
-                <div>
-                  <div className="relative h-56 w-full overflow-hidden">
-                    <img 
-                      src={mag.image} 
-                      alt={mag.year} 
-                      className="w-full h-full object-cover transition-transform duration-700 hover:scale-103"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute top-4 left-4 bg-emerald-900 text-white font-mono font-bold text-[9px] px-2.5 py-1 rounded-md uppercase">
-                      {mag.year}
-                    </div>
-                  </div>
-                  <div className="p-6 space-y-3">
-                    <h3 className="font-display font-extrabold text-lg text-slate-800 dark:text-white leading-tight">
-                      {mag.year} Annual Magazine
-                    </h3>
-                    <p className="text-xs text-gold font-mono tracking-wide font-bold">{mag.subtitle}</p>
-                    <p className="text-xs text-slate-500 leading-relaxed font-sans">{mag.desc}</p>
-                  </div>
-                </div>
-
-                <div className="p-6 pt-0">
-                  <button 
-                    onClick={() => triggerDownloadSimulation(`${mag.year} Magazine`, `mag_${idx}`)}
-                    className="w-full py-2.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <Download size={13} />
-                    Download Annual Report
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 12. FAQ SECTION (ACCORDION) */}
+      {/* 6. FAQ SECTION (ACCORDION) */}
       <section className="py-20 max-w-4xl mx-auto px-4" id="faq-accordions">
         <div className="text-center space-y-3 mb-12">
           <span className="text-xs font-mono uppercase tracking-widest text-gold font-bold">Frequently Asked Questions</span>
@@ -1506,7 +1251,7 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
         </div>
       </section>
 
-      {/* 13. CSR INQUIRY FORM (SPLIT SCREEN & MULTI-STEP) */}
+      {/* 7. CSR INQUIRY FORM (SPLIT SCREEN & MULTI-STEP) */}
       <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-emerald-950/5 border-t border-b border-emerald-950/10'}`} id="partner-inquiry-section">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
@@ -1772,7 +1517,7 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
         </div>
       </section>
 
-      {/* 14. TESTIMONIALS SECTION (GLASS CARDS) */}
+      {/* 8. TESTIMONIALS SECTION (GLASS CARDS) */}
       <section className="py-20 max-w-7xl mx-auto px-4" id="testimonials">
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
           <span className="text-xs uppercase font-mono tracking-widest text-gold font-bold">STAKEHOLDER REVIEW</span>
@@ -1833,7 +1578,7 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
         </div>
       </section>
 
-      {/* 15. PARTNER LOGOS SECTION (INFINITE LOGO SLIDER) */}
+      {/* 9. PARTNER LOGOS SECTION (INFINITE LOGO SLIDER) */}
       <section className={`py-12 ${highContrast ? 'bg-black border-t border-b border-white' : 'bg-slate-100/50 border-t border-b border-slate-200/40'}`} id="partner-logos">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-[10px] font-mono tracking-widest text-slate-400 font-bold uppercase mb-6">SUPPORTED BY ESG INSTITUTIONS</p>
@@ -1849,51 +1594,6 @@ export default function ComplianceHub({ highContrast }: ComplianceHubProps) {
         </div>
       </section>
 
-      {/* 16. RESOURCE DOWNLOAD CENTRE SECTION */}
-      <section className="py-20 max-w-7xl mx-auto px-4" id="download-center">
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
-          <span className="text-xs uppercase font-mono tracking-widest text-gold font-bold">RESOURCE CENTRE</span>
-          <h2 className={`text-2xl md:text-4xl font-display font-extrabold ${highContrast ? 'text-white' : 'text-slate-900'}`}>
-            Quick Download Center
-          </h2>
-          <p className="text-sm text-slate-500 max-w-xl mx-auto">
-            Get single-click packages of Raita Mitra’s programmatic dossiers, statutory filings, and compliance credentials.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-          {[
-            { title: "CSR Brochure", desc: "Interactive ESG alignments & thematic goals", file: "CSR_Brochure_2026.pdf" },
-            { title: "Annual Reports", desc: "All milestone narratives since 2021", file: "RMST_Annual_Reports.zip" },
-            { title: "Compliance Pack", desc: "CSR-1, 12A, 80G & NGO Darpan", file: "Statutory_Certificates.zip" },
-            { title: "Project Portfolio", desc: "Solar drip & IT Labs technical sheets", file: "Project_Portfolios_2026.pdf" },
-            { title: "Impact Reports", desc: "Water metrics & direct family counts", file: "Community_Outcomes.pdf" }
-          ].map((res, idx) => (
-            <div 
-              key={idx}
-              className={`p-5 rounded-2xl border text-left flex flex-col justify-between transition-all hover:shadow-md hover:-translate-y-1 ${
-                highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-100 shadow-sm'
-              }`}
-            >
-              <div className="space-y-2">
-                <FileDown size={24} className="text-emerald-700" />
-                <h3 className="text-xs md:text-sm font-bold text-slate-800 dark:text-white font-display leading-snug">{res.title}</h3>
-                <p className="text-[11px] text-slate-500 leading-normal font-sans">{res.desc}</p>
-              </div>
-              
-              <div className="pt-4 border-t border-slate-100 mt-4">
-                <button 
-                  onClick={() => triggerDownloadSimulation(res.title, `res_${idx}`)}
-                  className="w-full py-1.5 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer flex items-center justify-center gap-1"
-                >
-                  <Download size={10} />
-                  Download Dossier
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
     </div>
   );

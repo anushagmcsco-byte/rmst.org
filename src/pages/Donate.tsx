@@ -453,6 +453,40 @@ export default function Donate({ highContrast }: DonateProps) {
 
   const verifySimulatedOtp = () => {
     setSimulatedGatewayStep('processing');
+
+    // POST donation transaction to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Online Donation',
+        name: donorName,
+        email: donorEmail,
+        phone: donorPhone,
+        subject: `Donation: ₹${amount} for ${campaignTitle}`,
+        message: `80G tax exemption requested. PAN: ${donorPan || 'N/A'}. Country: ${donorCountry}. Purpose: ${earmarkedPurpose}`,
+        metadata: {
+          amount,
+          campaignTitle,
+          isRecurring,
+          country: donorCountry,
+          address: donorAddress,
+          panCard: donorPan,
+          purpose: earmarkedPurpose,
+          paymentGateway,
+          transactionId,
+          certificateId
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Donation logged to backend submissions list:', data);
+    })
+    .catch(err => {
+      console.error('Error logging donation:', err);
+    });
+
     setTimeout(() => {
       setSimulatedGatewayStep('success');
       setCheckoutStep(4);

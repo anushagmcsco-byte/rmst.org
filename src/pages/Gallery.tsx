@@ -342,14 +342,14 @@ export default function Gallery({ highContrast }: GalleryProps) {
         const parsed = JSON.parse(stored);
         if (parsed && Array.isArray(parsed)) {
           return parsed.map((item: any, idx: number) => ({
-            id: `dyn_photo_${idx}`,
+            id: item.id || `dyn_photo_${idx}`,
             category: item.tags?.[0] || 'Agriculture',
             title: item.title,
             image: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
             location: item.tags?.[1] || 'Haveri',
-            date: 'June 2026',
-            photographer: 'RMST Staff',
-            desc: 'Visual documentation of our ongoing rural outreach programs.'
+            date: item.date || 'June 2026',
+            photographer: item.photographer || 'RMST Staff',
+            desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
           }));
         }
       }
@@ -358,6 +358,32 @@ export default function Gallery({ highContrast }: GalleryProps) {
     }
     return PHOTO_GALLERY;
   });
+
+  // Load from server on mount to ensure we are showing up-to-date images across all devices
+  useEffect(() => {
+    fetch('/api/gallery')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const formatted = data.map((item: any, idx: number) => ({
+            id: item.id || `dyn_photo_${idx}`,
+            category: item.tags?.[0] || 'Agriculture',
+            title: item.title,
+            image: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
+            location: item.tags?.[1] || 'Haveri',
+            date: item.date || 'June 2026',
+            photographer: item.photographer || 'RMST Staff',
+            desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
+          }));
+          setDynamicGallery(formatted);
+          localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+        }
+      })
+      .catch(err => console.warn('Failed to load gallery from server, showing local/fallback gallery:', err));
+  }, []);
 
   // Navigation & Scroll to top
   useEffect(() => {
@@ -368,19 +394,10 @@ export default function Gallery({ highContrast }: GalleryProps) {
   const [selectedPhotoFilter, setSelectedPhotoFilter] = useState<string>('All');
   const [activePhotoLightbox, setActivePhotoLightbox] = useState<PhotoItem | null>(null);
   const [activeVideoModal, setActiveVideoModal] = useState<VideoItem | null>(null);
-  const [selectedDistrict, setSelectedDistrict] = useState<any>(DISTRICTS_DATA[0]);
-  const [hoveredDistrict, setHoveredDistrict] = useState<any>(null);
   const [activeSocialTab, setActiveSocialTab] = useState<'Instagram' | 'LinkedIn' | 'Facebook' | 'YouTube'>('Instagram');
   const [activePressTab, setActivePressTab] = useState<string>('All');
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
-
-  // Before/After Image Sliders Pos
-  const [beforeAfterPos, setBeforeAfterPos] = useState<{ [key: string]: number }>({
-    'farmer': 50,
-    'women': 50,
-    'youth': 50
-  });
 
   const photoFilters = ['All', 'Agriculture', 'Women Empowerment', 'Education & AI Skills', 'Health Camps', 'Environment', 'Entrepreneurship', 'Events'];
   const pressCategories = ['All', 'Press Releases', 'News Articles', 'Government Recognition', 'Awards & Appreciations'];
@@ -392,10 +409,6 @@ export default function Gallery({ highContrast }: GalleryProps) {
   const filteredPress = activePressTab === 'All' 
     ? PRESS_COVERAGE 
     : PRESS_COVERAGE.filter(p => p.category === activePressTab);
-
-  const handleSliderChange = (key: string, val: number) => {
-    setBeforeAfterPos(prev => ({ ...prev, [key]: val }));
-  };
 
   const startDownloadSimulation = (docName: string) => {
     if (downloadingDoc) return;
@@ -605,8 +618,8 @@ export default function Gallery({ highContrast }: GalleryProps) {
           ))}
         </div>
 
-        {/* Pinterest Masonry Layout */}
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+        {/* Responsive Grid Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <AnimatePresence mode="popLayout">
             {filteredPhotos.map((photo) => (
               <motion.div
@@ -616,7 +629,7 @@ export default function Gallery({ highContrast }: GalleryProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.25 }}
-                className="break-inside-avoid"
+                className="w-full"
               >
                 <div 
                   onClick={() => setActivePhotoLightbox(photo)}
@@ -624,11 +637,11 @@ export default function Gallery({ highContrast }: GalleryProps) {
                     highContrast ? 'bg-black border-2 border-white' : 'bg-white border-slate-200/50 shadow-sm'
                   }`}
                 >
-                  <div className="relative overflow-hidden bg-slate-100">
+                  <div className="relative overflow-hidden bg-slate-100 aspect-[4/3]">
                     <img 
                       src={photo.image} 
                       alt={photo.title} 
-                      className="w-full h-auto object-cover transition-all duration-500 group-hover:scale-102"
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-102"
                       referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -724,375 +737,6 @@ export default function Gallery({ highContrast }: GalleryProps) {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 6. EVENTS & WORKSHOPS (CARD GRID) */}
-      <section className="py-20 max-w-7xl mx-auto px-4" id="events-workshops">
-        <div className="text-center space-y-3 mb-12">
-          <span className="text-xs font-mono uppercase tracking-widest text-gold font-bold">ON-GROUND CAMPAIGNS</span>
-          <h2 className={`text-2xl md:text-4xl font-display font-extrabold tracking-tight ${highContrast ? 'text-white' : 'text-slate-950'}`}>
-            Events & Workshops
-          </h2>
-          <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto font-sans leading-relaxed">
-            Documenting workshops and village gatherings targeting micro-credit training, agricultural expos, and health camps.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {EVENT_GALLERY.map((evt) => (
-            <div 
-              key={evt.id}
-              className={`rounded-2xl border text-left overflow-hidden transition-all hover:shadow-sm flex flex-col justify-between ${
-                highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/50 shadow-sm'
-              }`}
-            >
-              <div>
-                <div className="relative h-44 overflow-hidden bg-slate-100">
-                  <img 
-                    src={evt.coverImage} 
-                    alt={evt.title} 
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                  <span className="absolute top-3 left-3 bg-slate-900/90 text-white font-mono text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                    {evt.event}
-                  </span>
-                </div>
-                <div className="p-5 space-y-2">
-                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-bold tracking-wider block uppercase">
-                    {evt.attendees}
-                  </span>
-                  <h3 className="text-xs md:text-sm font-bold font-display leading-tight text-slate-800 dark:text-white">
-                    {evt.title}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-300 font-sans leading-relaxed">
-                    {evt.desc}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="p-5 pt-0 border-t border-slate-100 mt-2 flex justify-between items-center text-[9px] font-mono text-slate-400">
-                <span className="flex items-center gap-1">
-                  <MapPin size={10} />
-                  {evt.location}
-                </span>
-                <span>{evt.date}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 7. IMPACT IN PICTURES SECTION (BEFORE/AFTER SCRUBBERS) */}
-      <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-slate-50 border-t border-b border-slate-200/40'}`} id="impact-in-pictures">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center space-y-3 mb-12">
-            <span className="text-xs font-mono uppercase tracking-widest text-gold font-bold">SIDE-BY-SIDE VERIFICATION</span>
-            <h2 className={`text-2xl md:text-4xl font-display font-extrabold tracking-tight ${highContrast ? 'text-white' : 'text-slate-950'}`}>
-              Impact In Pictures
-            </h2>
-            <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto font-sans leading-relaxed">
-              Drag the interactive sliders below left or right to directly compare drymonsooned terrain against restored green watersheds.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {[
-              {
-                key: 'farmer',
-                title: "Farmer Empowerment",
-                desc: "Switching rainfed fields to intensive crop diversity with custom solar-drip setups.",
-                beforeImg: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800",
-                afterImg: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&q=80&w=800",
-                beforeLabel: "Traditional Monocrop",
-                afterLabel: "Improved Solar Agroforestry"
-              },
-              {
-                key: 'women',
-                title: "Women Entrepreneurship",
-                desc: "Transforming seasonal manual labor into active community dairy cooperations.",
-                beforeImg: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=800",
-                afterImg: "https://images.unsplash.com/photo-1589156280159-27698a70f29e?auto=format&fit=crop&q=80&w=800",
-                beforeLabel: "Vulnerable Seasonal Wages",
-                afterLabel: "Vibrant Dairy SHG Units"
-              },
-              {
-                key: 'youth',
-                title: "Youth Development",
-                desc: "Bridging isolated classrooms with solar-fueled digital centers teaching coding.",
-                beforeImg: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=800",
-                afterImg: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800",
-                beforeLabel: "Isolated Rote Classrooms",
-                afterLabel: "Digital & AI Smart IT Labs"
-              }
-            ].map((slider) => (
-              <div 
-                key={slider.key}
-                className={`p-6 rounded-3xl border text-left ${
-                  highContrast ? 'bg-black border-2 border-white' : 'bg-white border-slate-200/50 shadow-sm'
-                }`}
-              >
-                <h3 className="text-base font-bold font-display text-slate-800 dark:text-white mb-1">
-                  {slider.title}
-                </h3>
-                <p className="text-xs text-slate-500 mb-4 font-sans leading-normal">
-                  {slider.desc}
-                </p>
-
-                {/* Interactive Slider Area */}
-                <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-900 select-none">
-                  {/* Before (Left/Under) */}
-                  <img 
-                    src={slider.beforeImg} 
-                    alt="Before transformation" 
-                    className="absolute inset-0 w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute left-3 top-3 bg-rose-600/90 text-white font-mono text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-wider backdrop-blur-sm z-10">
-                    Before: {slider.beforeLabel}
-                  </div>
-
-                  {/* After (Right/Over, clipped based on slide pos) */}
-                  <div 
-                    className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
-                    style={{ clipPath: `polygon(0 0, ${beforeAfterPos[slider.key]}% 0, ${beforeAfterPos[slider.key]}% 100%, 0 100%)` }}
-                  >
-                    <img 
-                      src={slider.afterImg} 
-                      alt="After transformation" 
-                      className="absolute inset-0 w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute right-3 top-3 bg-emerald-600/90 text-white font-mono text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-wider backdrop-blur-sm">
-                      After: {slider.afterLabel}
-                    </div>
-                  </div>
-
-                  {/* Range Input scrubbing overlay */}
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    value={beforeAfterPos[slider.key]} 
-                    onChange={(e) => handleSliderChange(slider.key, Number(e.target.value))}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
-                  />
-
-                  {/* Sliding vertical handle bar */}
-                  <div 
-                    className="absolute top-0 bottom-0 w-1 bg-white z-10 pointer-events-none"
-                    style={{ left: `${beforeAfterPos[slider.key]}%` }}
-                  >
-                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white text-slate-800 flex items-center justify-center shadow-md border border-slate-200 text-xs font-bold font-mono">
-                      ↔
-                    </div>
-                  </div>
-                </div>
-                <div className="text-center text-[10px] font-mono text-slate-400 mt-3 uppercase tracking-wider">
-                  ← Slide to verify change →
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 8. INTERACTIVE SVG MAP SECTION (ACTIVITIES ACROSS KARNATAKA) */}
-      <section className="py-20 max-w-7xl mx-auto px-4" id="district-interactive-map">
-        <div className="text-center space-y-3 mb-12">
-          <span className="text-xs font-mono uppercase tracking-widest text-gold font-bold">GEOGRAPHIC EVIDENCE</span>
-          <h2 className={`text-2xl md:text-4xl font-display font-extrabold tracking-tight ${highContrast ? 'text-white' : 'text-slate-950'}`}>
-            Activities Across Karnataka
-          </h2>
-          <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto font-sans leading-relaxed">
-            Hover or click on active district coordinates inside our custom regional vector nodes map to extract live program summaries.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          
-          {/* Interactive Vector Map Grid (7 cols) */}
-          <div className="lg:col-span-7 flex justify-center">
-            <div className={`relative w-full max-w-lg aspect-[5/4] border rounded-3xl p-6 ${
-              highContrast ? 'bg-black border-2 border-white' : 'bg-white border-slate-200/50 shadow-sm'
-            }`}>
-              
-              {/* Regional grid lines & geographic background mock */}
-              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#000_1px,transparent_1px)] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
-              
-              <svg viewBox="0 0 100 80" className="w-full h-full relative z-10 overflow-visible">
-                {/* Simulated Karnataka Regional Border Outlines */}
-                <path 
-                  d="M 10 10 L 90 5 Q 95 40 85 70 L 50 75 Q 30 70 10 50 Z" 
-                  fill="none" 
-                  stroke={highContrast ? '#fff' : '#e2e8f0'} 
-                  strokeWidth="0.75" 
-                  strokeDasharray="2 2"
-                />
-                <path 
-                  d="M 20 20 L 80 15 Q 85 45 75 65 L 45 70 Q 25 60 20 40 Z" 
-                  fill={highContrast ? '#111' : '#f8fafc'} 
-                  stroke={highContrast ? '#fff' : '#cbd5e1'} 
-                  strokeWidth="1.5"
-                />
-
-                {/* Dynamic dashed lines connecting districts */}
-                {DISTRICTS_DATA.map((dist, idx) => {
-                  if (idx === 0) return null;
-                  const prev = DISTRICTS_DATA[idx - 1];
-                  return (
-                    <line 
-                      key={`line-${idx}`}
-                      x1={prev.x} 
-                      y1={prev.y} 
-                      x2={dist.x} 
-                      y2={dist.y} 
-                      stroke={highContrast ? '#fff' : '#10b981'} 
-                      strokeWidth="0.5" 
-                      strokeDasharray="3 3" 
-                      opacity="0.4"
-                    />
-                  );
-                })}
-
-                {/* District Active Nodes */}
-                {DISTRICTS_DATA.map((dist) => {
-                  const isSelected = selectedDistrict?.id === dist.id;
-                  const isHovered = hoveredDistrict?.id === dist.id;
-                  
-                  return (
-                    <g 
-                      key={dist.id}
-                      className="cursor-pointer"
-                      onClick={() => setSelectedDistrict(dist)}
-                      onMouseEnter={() => setHoveredDistrict(dist)}
-                      onMouseLeave={() => setHoveredDistrict(null)}
-                    >
-                      {/* Outer pulsing beacon ring */}
-                      <circle 
-                        cx={dist.x} 
-                        cy={dist.y} 
-                        r={isSelected || isHovered ? 4.5 : 2.5} 
-                        fill={highContrast ? '#fff' : '#10b981'} 
-                        opacity={isSelected ? 0.35 : isHovered ? 0.25 : 0.15}
-                        className="transition-all duration-300 animate-ping"
-                      />
-                      {/* Core Node circle */}
-                      <circle 
-                        cx={dist.x} 
-                        cy={dist.y} 
-                        r={isSelected ? 2.5 : isHovered ? 2.2 : 1.5} 
-                        fill={isSelected ? '#f59e0b' : '#10b981'} 
-                        stroke="#fff"
-                        strokeWidth="0.5"
-                        className="transition-all duration-300"
-                      />
-                      {/* Name label text overlay */}
-                      <text 
-                        x={dist.x} 
-                        y={dist.y - 3} 
-                        textAnchor="middle" 
-                        fontSize="2.5" 
-                        fontWeight="bold"
-                        fontFamily="monospace"
-                        fill={isSelected ? '#f59e0b' : highContrast ? '#fff' : '#334155'}
-                        className="transition-all duration-300 select-none"
-                      >
-                        {dist.name}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-
-              {/* Hover Image floating indicator (showImagesOnHover: true) */}
-              <AnimatePresence>
-                {hoveredDistrict && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="absolute z-30 bottom-8 left-8 right-8 p-3 rounded-2xl bg-slate-900 text-white flex gap-3 items-center border border-slate-700/60 shadow-lg pointer-events-none"
-                  >
-                    <img 
-                      src={hoveredDistrict.image} 
-                      alt={hoveredDistrict.name} 
-                      className="w-12 h-12 object-cover rounded-lg shrink-0"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div>
-                      <span className="text-[10px] font-mono font-bold text-gold uppercase tracking-wider">
-                        {hoveredDistrict.name} Hub
-                      </span>
-                      <h4 className="text-xs font-bold leading-none">{hoveredDistrict.projects} Active Initiatives</h4>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Active District Statistics Card (5 cols) */}
-          <div className="lg:col-span-5 text-left">
-            <AnimatePresence mode="wait">
-              {selectedDistrict && (
-                <motion.div
-                  key={selectedDistrict.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                  className={`p-6 rounded-3xl border space-y-4 ${
-                    highContrast ? 'bg-black border-2 border-white' : 'bg-white border-slate-200/50 shadow-sm'
-                  }`}
-                >
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                    <div>
-                      <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 uppercase block tracking-wider">
-                        SELECTED TARGET ZONE
-                      </span>
-                      <h3 className="text-lg font-bold font-display tracking-tight text-slate-800 dark:text-white">
-                        {selectedDistrict.name} District
-                      </h3>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded bg-slate-100 text-slate-600 uppercase tracking-wider">
-                      {selectedDistrict.rating}
-                    </span>
-                  </div>
-
-                  <img 
-                    src={selectedDistrict.image} 
-                    alt={selectedDistrict.name} 
-                    className="w-full h-32 object-cover rounded-2xl"
-                    referrerPolicy="no-referrer"
-                  />
-
-                  <div className="grid grid-cols-2 gap-4 text-xs font-sans">
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-mono text-slate-400 block uppercase">ACTIVE PROJECTS</span>
-                      <strong className="text-slate-800 text-sm font-bold">{selectedDistrict.projects} Projects</strong>
-                    </div>
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-mono text-slate-400 block uppercase">COMMUNITY REACH</span>
-                      <strong className="text-slate-800 text-sm font-bold">{selectedDistrict.reach}</strong>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Ongoing projects in this zone address water scarcity through localized watershed bunding and digital AI skills camps inside rural state high schools.
-                  </p>
-
-                  <button 
-                    onClick={() => scrollToSection('photo-gallery-sec')}
-                    className="w-full py-2.5 rounded-xl text-xs font-bold text-center bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
-                  >
-                    View Photos from {selectedDistrict.name}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </div>
       </section>
@@ -1619,7 +1263,17 @@ export default function Gallery({ highContrast }: GalleryProps) {
                 CLOSE [×]
               </button>
               
-              <div className="rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl">
+              <div className="relative rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl">
+                {/* Top-Right Absolute Close Overlay Button */}
+                <button 
+                  onClick={() => setActivePhotoLightbox(null)}
+                  className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-slate-950/70 hover:bg-slate-950 text-white hover:text-gold transition-colors border border-white/20 cursor-pointer shadow-lg"
+                  aria-label="Close Lightbox"
+                  id="close-photo-overlay"
+                >
+                  <X size={18} />
+                </button>
+
                 <img 
                   src={activePhotoLightbox.image} 
                   alt={activePhotoLightbox.title} 
@@ -1668,7 +1322,16 @@ export default function Gallery({ highContrast }: GalleryProps) {
                 CLOSE [×]
               </button>
               
-              <div className="rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl">
+              <div className="relative rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl">
+                {/* Top-Right Absolute Close Overlay Button */}
+                <button 
+                  onClick={() => setActiveVideoModal(null)}
+                  className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-slate-950/70 hover:bg-slate-950 text-white hover:text-gold transition-colors border border-white/20 cursor-pointer shadow-lg animate-pulse"
+                  aria-label="Close Video Player"
+                  id="close-video-overlay"
+                >
+                  <X size={18} />
+                </button>
                 
                 {/* Youtube Video iframe or Fallback Mock player */}
                 <div className="relative aspect-video bg-black">

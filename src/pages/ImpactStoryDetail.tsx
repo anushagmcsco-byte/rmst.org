@@ -411,12 +411,55 @@ export default function ImpactStoryDetail({ slug, setActivePage, highContrast }:
   const [commentRating, setCommentRating] = useState<number>(5);
   const [commentSuccess, setCommentSuccess] = useState<boolean>(false);
 
+  const [newsletterName, setNewsletterName] = useState<string>("");
+  const [newsletterEmail, setNewsletterEmail] = useState<string>("");
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState<boolean>(false);
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterName || !newsletterEmail) return;
+
+    // POST newsletter subscription to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Newsletter Signup',
+        name: newsletterName,
+        email: newsletterEmail,
+        phone: '',
+        subject: 'Stay Inspired Journal Subscription',
+        message: `Subscribed to Stay Inspired updates for story: ${story.title}`,
+        metadata: { page: 'Impact Story Detail', storySlug: story.slug, storyTitle: story.title }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Stay inspired subscription logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging subscription:', err);
+    });
+
+    setNewsletterSubscribed(true);
+    alert("Subscription registered! Welcome to the Raita Mitra Journal.");
+  };
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as any });
     // Load existing comments from localStorage or initialize with some
     const saved = localStorage.getItem(`comments_${story.slug}`);
+    let loadedComments = null;
     if (saved) {
-      setComments(JSON.parse(saved));
+      try {
+        loadedComments = JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing stored comments:', e);
+      }
+    }
+
+    if (loadedComments && Array.isArray(loadedComments)) {
+      setComments(loadedComments);
     } else {
       const initial = [
         { name: "Kunal Deshmukh", date: "April 12, 2026", content: "This is exactly what CSR investments should fund—tangible capability building rather than simple handouts. Exceptional reporting!", rating: 5 },
@@ -1561,11 +1604,13 @@ export default function ImpactStoryDetail({ slug, setActivePage, highContrast }:
               Get raw, field-journal stories of resilience, sustainability, and educational technology delivered straight to your email. No spam, ever.
             </p>
 
-            <form onSubmit={(e) => { e.preventDefault(); alert("Subscription registered! Welcome to the Raita Mitra Journal."); }} className="pt-4 flex flex-col sm:flex-row gap-2">
+            <form onSubmit={handleNewsletterSubmit} className="pt-4 flex flex-col sm:flex-row gap-2">
               <input 
                 type="text" 
                 placeholder="Name" 
                 required
+                value={newsletterName}
+                onChange={e => setNewsletterName(e.target.value)}
                 className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-sans outline-none border ${
                   highContrast ? 'bg-black border-white text-white' : 'bg-slate-50 border-slate-200 focus:border-emerald-800 focus:bg-white'
                 }`}
@@ -1574,6 +1619,8 @@ export default function ImpactStoryDetail({ slug, setActivePage, highContrast }:
                 type="email" 
                 placeholder="Email Address" 
                 required
+                value={newsletterEmail}
+                onChange={e => setNewsletterEmail(e.target.value)}
                 className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-sans outline-none border ${
                   highContrast ? 'bg-black border-white text-white' : 'bg-slate-50 border-slate-200 focus:border-emerald-800 focus:bg-white'
                 }`}

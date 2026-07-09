@@ -365,7 +365,10 @@ export default function NewsBlog({ setActivePage, highContrast }: NewsBlogProps)
     try {
       const stored = localStorage.getItem('raita_mitra_blogs_list');
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed)) {
+          return parsed;
+        }
       }
     } catch (e) {
       console.error(e);
@@ -509,6 +512,29 @@ export default function NewsBlog({ setActivePage, highContrast }: NewsBlogProps)
     e.preventDefault();
     if (!subName || !subEmail) return;
     setSubStatus('loading');
+
+    // POST newsletter signup to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Newsletter Signup',
+        name: subName,
+        email: subEmail,
+        phone: '',
+        subject: 'News & Blog Newsletter Signup',
+        message: 'Subscribed to news feed, policy dispatches, and updates.',
+        metadata: { page: 'News & Blog Feed' }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('News/Blog newsletter signup logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging newsletter signup:', err);
+    });
+
     setTimeout(() => {
       setSubStatus('success');
       setTimeout(() => {

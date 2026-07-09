@@ -173,6 +173,32 @@ export default function PrivacyPolicy({ setActivePage, highContrast = false }: P
     }
 
     setIsProcessingRequest(true);
+
+    // POST privacy data request to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Support Ticket',
+        name: dataRequestForm.fullName,
+        email: dataRequestForm.email,
+        phone: dataRequestForm.phone || '',
+        subject: `Data Privacy Request: ${dataRequestForm.requestType}`,
+        message: dataRequestForm.additionalNotes || 'Requested GDPR/DPA data clearance review.',
+        metadata: {
+          requestType: dataRequestForm.requestType,
+          consentChecked: dataRequestForm.consentChecked
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Privacy data request logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging privacy data request:', err);
+    });
+
     setTimeout(() => {
       setIsProcessingRequest(false);
       setRequestSubmitted(true);

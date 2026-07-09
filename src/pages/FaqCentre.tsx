@@ -386,7 +386,63 @@ export default function FaqCentre({ setActivePage, highContrast = false }: FaqCe
   const handleSchedulerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!scheduleName || !scheduleEmail || !scheduleDate) return;
+
+    // POST scheduled meeting request to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Partner Onboarding',
+        name: scheduleName,
+        email: scheduleEmail,
+        phone: '',
+        subject: `FAQ Portal Consultation: ${scheduleType}`,
+        message: `Requested programmatic review consultation. Date: ${scheduleDate} at ${scheduleTime || '10:00 AM'}.`,
+        metadata: {
+          sessionType: scheduleType,
+          date: scheduleDate,
+          time: scheduleTime || '10:00 AM'
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('FAQ portal meeting logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging FAQ portal meeting:', err);
+    });
+
     setSchedulerStatus('success');
+  };
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail) return;
+
+    // POST newsletter subscription to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Newsletter Signup',
+        name: newsletterName || 'FAQ Hub Subscriber',
+        email: newsletterEmail,
+        phone: '',
+        subject: 'FAQ Portal Newsletter Signup',
+        message: 'Subscribed to audited monthly impact dispatch updates.',
+        metadata: { page: 'FAQ Centre' }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('FAQ page newsletter signup logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging newsletter signup:', err);
+    });
+
+    setNewsletterSubmitted(true);
   };
 
   const resetScheduler = () => {
@@ -1375,10 +1431,7 @@ export default function FaqCentre({ setActivePage, highContrast = false }: FaqCe
                 </div>
               ) : (
                 <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (newsletterEmail) setNewsletterSubmitted(true);
-                  }}
+                  onSubmit={handleNewsletterSubmit}
                   className="space-y-3 max-w-md mx-auto"
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">

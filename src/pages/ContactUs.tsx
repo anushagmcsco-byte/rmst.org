@@ -245,6 +245,8 @@ export default function ContactUs({ highContrast }: ContactUsProps) {
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [newsletterErrors, setNewsletterErrors] = useState<Record<string, string>>({});
+  const [ticketErrors, setTicketErrors] = useState<Record<string, string>>({});
   const [submittingInquiry, setSubmittingInquiry] = useState(false);
   const [submittedInquiry, setSubmittedInquiry] = useState(false);
   const [integrationLogs, setIntegrationLogs] = useState<string[]>([]);
@@ -303,20 +305,55 @@ export default function ContactUs({ highContrast }: ContactUsProps) {
   const validateStep = (step: number) => {
     const errors: Record<string, string> = {};
     if (step === 1) {
-      if (!formData.fullName.trim()) errors.fullName = "Full Name is required.";
-      if (!formData.organizationName.trim()) errors.organizationName = "Organization Name is required.";
-      if (!formData.designation.trim()) errors.designation = "Designation is required.";
+      if (!formData.fullName.trim()) {
+        errors.fullName = "Full Name is required.";
+      } else if (formData.fullName.trim().length < 2) {
+        errors.fullName = "Name must be at least 2 characters.";
+      } else if (!/^[A-Za-z\s.]{2,50}$/.test(formData.fullName.trim())) {
+        errors.fullName = "Please enter a valid name (letters, spaces, and dots only).";
+      }
+
+      if (!formData.organizationName.trim()) {
+        errors.organizationName = "Organization Name is required.";
+      } else if (formData.organizationName.trim().length < 2) {
+        errors.organizationName = "Organization Name must be at least 2 characters.";
+      }
+
+      if (!formData.designation.trim()) {
+        errors.designation = "Designation is required.";
+      } else if (formData.designation.trim().length < 2) {
+        errors.designation = "Designation must be at least 2 characters.";
+      }
     } else if (step === 2) {
-      if (!formData.emailAddress.trim() || !formData.emailAddress.includes('@')) {
-        errors.emailAddress = "Valid corporate email address is required.";
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!formData.emailAddress.trim()) {
+        errors.emailAddress = "Email address is required.";
+      } else if (!emailRegex.test(formData.emailAddress.trim())) {
+        errors.emailAddress = "Please enter a valid email address (e.g., name@domain.com).";
       }
-      if (!formData.mobileNumber.trim() || formData.mobileNumber.replace(/\D/g, '').length < 10) {
-        errors.mobileNumber = "Valid 10-digit mobile number is required.";
+
+      const phoneClean = formData.mobileNumber.replace(/[\s-+()]/g, '');
+      if (!formData.mobileNumber.trim()) {
+        errors.mobileNumber = "Mobile number is required.";
+      } else if (!/^\d{10}$/.test(phoneClean) && !/^(91)\d{10}$/.test(phoneClean)) {
+        errors.mobileNumber = "Please enter a valid 10-digit Indian mobile number.";
       }
-      if (!formData.city.trim()) errors.city = "City/District name is required.";
+
+      if (!formData.city.trim()) {
+        errors.city = "City/District name is required.";
+      } else if (formData.city.trim().length < 2) {
+        errors.city = "Please enter a valid location name.";
+      }
     } else if (step === 3) {
-      if (!formData.subject.trim()) errors.subject = "Inquiry Subject is required.";
-      if (!formData.message.trim() || formData.message.length < 15) {
+      if (!formData.subject.trim()) {
+        errors.subject = "Inquiry Subject is required.";
+      } else if (formData.subject.trim().length < 5) {
+        errors.subject = "Subject must be at least 5 characters.";
+      }
+
+      if (!formData.message.trim()) {
+        errors.message = "Message details are required.";
+      } else if (formData.message.trim().length < 15) {
         errors.message = "Message must detail your strategic inquiry (min 15 chars).";
       }
     }
@@ -353,6 +390,36 @@ export default function ContactUs({ highContrast }: ContactUsProps) {
       setTimeout(() => {
         setIntegrationLogs(prev => [...prev, logMessage]);
       }, (index + 1) * 450);
+    });
+
+    // POST payload to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Strategic Inquiry',
+        name: formData.fullName,
+        email: formData.emailAddress,
+        phone: formData.mobileNumber,
+        subject: formData.subject,
+        message: formData.message,
+        metadata: {
+          organization: formData.organizationName,
+          designation: formData.designation,
+          state: formData.state,
+          city: formData.city,
+          inquiryType: formData.inquiryType,
+          preferredMode: formData.preferredMode,
+          preferredTime: formData.preferredTime
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Inquiry logged successfully:', data);
+    })
+    .catch(err => {
+      console.error('Error logging inquiry:', err);
     });
 
     setTimeout(() => {
@@ -402,8 +469,25 @@ export default function ContactUs({ highContrast }: ContactUsProps) {
 
   const createTicket = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ticketSubject.trim() || !ticketMsg.trim()) return;
+    const errors: Record<string, string> = {};
+    if (!ticketSubject.trim()) {
+      errors.ticketSubject = "Ticket subject is required.";
+    } else if (ticketSubject.trim().length < 5) {
+      errors.ticketSubject = "Subject must be at least 5 characters.";
+    }
 
+    if (!ticketMsg.trim()) {
+      errors.ticketMsg = "Message/Issue details are required.";
+    } else if (ticketMsg.trim().length < 10) {
+      errors.ticketMsg = "Details must be at least 10 characters.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setTicketErrors(errors);
+      return;
+    }
+
+    setTicketErrors({});
     const newTicket = {
       id: "TKT-" + Math.floor(Math.random() * 90000 + 10000),
       subject: ticketSubject,
@@ -411,6 +495,32 @@ export default function ContactUs({ highContrast }: ContactUsProps) {
       status: "Awaiting CSR Officer",
       date: new Date().toISOString().split('T')[0]
     };
+
+    // POST Support Ticket to backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Support Ticket',
+        name: 'Anonymous Supporter',
+        email: 'ticket-system@raitamitra.org',
+        phone: '',
+        subject: `[${ticketCategory}] ${ticketSubject}`,
+        message: ticketMsg,
+        metadata: {
+          ticketId: newTicket.id,
+          category: ticketCategory,
+          status: newTicket.status
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Ticket logged to server:', data);
+    })
+    .catch(err => {
+      console.error('Error logging ticket:', err);
+    });
 
     setActiveTickets(prev => [newTicket, ...prev]);
     setTicketSubject('');
@@ -421,7 +531,48 @@ export default function ContactUs({ highContrast }: ContactUsProps) {
 
   const triggerNewsletter = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newsletterEmail.trim()) return;
+    const errors: Record<string, string> = {};
+    if (!newsletterName.trim()) {
+      errors.newsletterName = "Name is required.";
+    } else if (newsletterName.trim().length < 2) {
+      errors.newsletterName = "Name must be at least 2 characters.";
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!newsletterEmail.trim()) {
+      errors.newsletterEmail = "Email is required.";
+    } else if (!emailRegex.test(newsletterEmail.trim())) {
+      errors.newsletterEmail = "Please enter a valid email address.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setNewsletterErrors(errors);
+      return;
+    }
+
+    // POST Newsletter subscription to backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Newsletter Subscription',
+        name: newsletterName,
+        email: newsletterEmail,
+        phone: '',
+        subject: 'Newsletter Subscription Request',
+        message: `User ${newsletterName} subscribed to newsletter.`,
+        metadata: {}
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Subscription logged to server:', data);
+    })
+    .catch(err => {
+      console.error('Error logging subscription:', err);
+    });
+
+    setNewsletterErrors({});
     setNewsletterSubscribed(true);
   };
 
@@ -1443,22 +1594,44 @@ export default function ContactUs({ highContrast }: ContactUsProps) {
                       <div>
                         <input 
                           type="text"
-                          required
                           value={newsletterName}
-                          onChange={(e) => setNewsletterName(e.target.value)}
+                          onChange={(e) => {
+                            setNewsletterName(e.target.value);
+                            if (newsletterErrors.newsletterName) {
+                              setNewsletterErrors(prev => {
+                                const copy = { ...prev };
+                                delete copy.newsletterName;
+                                return copy;
+                              });
+                            }
+                          }}
                           placeholder="Your Name / Institution"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-emerald-500"
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-emerald-500 ${
+                            newsletterErrors.newsletterName ? 'border-rose-500' : 'border-slate-800'
+                          }`}
                         />
+                        {newsletterErrors.newsletterName && <p className="text-[10px] text-rose-400 mt-1">{newsletterErrors.newsletterName}</p>}
                       </div>
                       <div>
                         <input 
-                          type="email"
-                          required
+                          type="text"
                           value={newsletterEmail}
-                          onChange={(e) => setNewsletterEmail(e.target.value)}
+                          onChange={(e) => {
+                            setNewsletterEmail(e.target.value);
+                            if (newsletterErrors.newsletterEmail) {
+                              setNewsletterErrors(prev => {
+                                const copy = { ...prev };
+                                delete copy.newsletterEmail;
+                                return copy;
+                              });
+                            }
+                          }}
                           placeholder="corporate@domain.org"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-emerald-500"
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-emerald-500 ${
+                            newsletterErrors.newsletterEmail ? 'border-rose-500' : 'border-slate-800'
+                          }`}
                         />
+                        {newsletterErrors.newsletterEmail && <p className="text-[10px] text-rose-400 mt-1">{newsletterErrors.newsletterEmail}</p>}
                       </div>
                       <button
                         type="submit"
@@ -1581,12 +1754,23 @@ export default function ContactUs({ highContrast }: ContactUsProps) {
                     <label className="block text-[10px] font-bold text-slate-500 uppercase font-mono mb-1.5">Ticket Subject</label>
                     <input 
                       type="text" 
-                      required
                       value={ticketSubject}
-                      onChange={(e) => setTicketSubject(e.target.value)}
+                      onChange={(e) => {
+                        setTicketSubject(e.target.value);
+                        if (ticketErrors.ticketSubject) {
+                          setTicketErrors(prev => {
+                            const copy = { ...prev };
+                            delete copy.ticketSubject;
+                            return copy;
+                          });
+                        }
+                      }}
                       placeholder="e.g. Save Soil diagnostic shipment inquiry" 
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                      className={`w-full px-3.5 py-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white ${
+                        ticketErrors.ticketSubject ? 'border-rose-400 ring-1 ring-rose-100' : 'border-slate-200'
+                      }`}
                     />
+                    {ticketErrors.ticketSubject && <p className="text-[10px] text-rose-500 mt-1">{ticketErrors.ticketSubject}</p>}
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase font-mono mb-1.5">Administrative Category</label>
@@ -1607,12 +1791,23 @@ export default function ContactUs({ highContrast }: ContactUsProps) {
                   <label className="block text-[10px] font-bold text-slate-500 uppercase font-mono mb-1.5">Message / Issue Details</label>
                   <textarea 
                     rows={3}
-                    required
                     value={ticketMsg}
-                    onChange={(e) => setTicketMsg(e.target.value)}
+                    onChange={(e) => {
+                      setTicketMsg(e.target.value);
+                      if (ticketErrors.ticketMsg) {
+                        setTicketErrors(prev => {
+                          const copy = { ...prev };
+                          delete copy.ticketMsg;
+                          return copy;
+                        });
+                      }
+                    }}
                     placeholder="Describe specific timelines, dispatch reference numbers, taluk centers, or audit ledger criteria..." 
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                    className={`w-full px-3.5 py-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white ${
+                      ticketErrors.ticketMsg ? 'border-rose-400 ring-1 ring-rose-100' : 'border-slate-200'
+                    }`}
                   />
+                  {ticketErrors.ticketMsg && <p className="text-[10px] text-rose-500 mt-1">{ticketErrors.ticketMsg}</p>}
                 </div>
 
                 <button 

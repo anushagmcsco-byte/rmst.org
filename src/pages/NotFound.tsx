@@ -126,6 +126,29 @@ export default function NotFound({ setActivePage, highContrast = false }: NotFou
     e.preventDefault();
     if (!newsletterName || !newsletterEmail) return;
     setNewsletterSubscribed(true);
+
+    // POST newsletter subscription to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Newsletter Signup',
+        name: newsletterName,
+        email: newsletterEmail,
+        phone: '',
+        subject: '404 Page Newsletter Signup',
+        message: 'Subscribed to newsletter from the Not Found page.',
+        metadata: { page: 'Not Found' }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Not Found page newsletter signup logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging newsletter signup:', err);
+    });
+
     setTimeout(() => {
       setNewsletterName('');
       setNewsletterEmail('');

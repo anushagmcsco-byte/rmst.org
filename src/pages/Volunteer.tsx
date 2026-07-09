@@ -115,6 +115,34 @@ export default function Volunteer({ highContrast }: VolunteerProps) {
       status: "Approved", // Auto-approved for premium user simulation
       description: newLog.description
     };
+
+    // POST hours log to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Volunteer Hours Log',
+        name: userProfile.fullName,
+        email: userProfile.email,
+        phone: userProfile.mobile,
+        subject: `Logged Hours for ${newLog.project}`,
+        message: newLog.description,
+        metadata: {
+          date: newLog.date,
+          project: newLog.project,
+          hours: Number(newLog.hours),
+          volunteerId: userProfile.volunteerId
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Hours log synced with server:', data);
+    })
+    .catch(err => {
+      console.error('Error syncing hours log:', err);
+    });
+
     setUserHoursLogs([newEntry, ...userHoursLogs]);
     setUserProfile(prev => ({
       ...prev,

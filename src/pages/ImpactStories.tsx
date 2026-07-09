@@ -447,9 +447,38 @@ export default function ImpactStories({ setActivePage, highContrast }: ImpactSto
   const submitPartnership = (e: React.FormEvent) => {
     e.preventDefault();
     setFormSubmitted(true);
+
+    // POST partnership request to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Partner Onboarding',
+        name: partnershipForm.name,
+        email: partnershipForm.email,
+        phone: '',
+        subject: `Partnership Proposal: ${partnershipForm.org}`,
+        message: partnershipForm.notes || 'Interested in partnership with Raita Mitra.',
+        metadata: {
+          organization: partnershipForm.org,
+          focusIntervention: partnershipForm.focus,
+          estimatedBudget: partnershipForm.budget
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Partnership request logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging partnership request:', err);
+    });
+
     setTimeout(() => {
       setShowPartnershipModal(false);
       setFormSubmitted(false);
+      const nameSaved = partnershipForm.name;
+      const emailSaved = partnershipForm.email;
       // reset form
       setPartnershipForm({
         name: "",
@@ -459,7 +488,7 @@ export default function ImpactStories({ setActivePage, highContrast }: ImpactSto
         budget: "₹10L - ₹25L",
         notes: ""
       });
-      alert(`Thank you ${partnershipForm.name}. A representative from Raita Mitra's ESG Compliance division will contact you at ${partnershipForm.email} within 24 business hours.`);
+      alert(`Thank you ${nameSaved}. A representative from Raita Mitra's ESG Compliance division will contact you at ${emailSaved} within 24 business hours.`);
     }, 1800);
   };
 
@@ -468,6 +497,29 @@ export default function ImpactStories({ setActivePage, highContrast }: ImpactSto
     e.preventDefault();
     if (!newsletterName || !newsletterEmail) return;
     setNewsletterSubscribed(true);
+
+    // POST newsletter signup to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Newsletter Signup',
+        name: newsletterName,
+        email: newsletterEmail,
+        phone: '',
+        subject: 'Impact Newsletter Signup',
+        message: 'Subscribed to Impact Stories Journal updates.',
+        metadata: { page: 'Impact Stories' }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Impact stories newsletter signup logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging newsletter signup:', err);
+    });
+
     setTimeout(() => {
       setNewsletterSubscribed(false);
       setNewsletterName("");
@@ -657,137 +709,6 @@ export default function ImpactStories({ setActivePage, highContrast }: ImpactSto
         </div>
       </section>
 
-      {/* SECTION 4: BEFORE/AFTER INTERACTIVE COMPARE SLIDER SECTION */}
-      <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-emerald-950/5 border-t border-b border-emerald-900/10'}`} id="before-after-scenarios">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
-            <span className="text-xs uppercase font-mono tracking-wider text-gold font-bold">Rigorous Capability Built</span>
-            <h2 className={`text-2xl md:text-4xl font-display font-extrabold ${
-              highContrast ? 'text-white' : 'text-slate-900'
-            }`}>
-              Transformation Journeys
-            </h2>
-            <p className="text-xs md:text-sm text-slate-500 max-w-2xl mx-auto">
-              Hover and slide the interactive selector below on each card to visually examine rural distress transitioning to digital and agricultural capability.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {beforeAfterStories.map((story) => {
-              const pos = sliderPositions[story.id];
-              return (
-                <div 
-                  key={story.id} 
-                  className={`p-5 rounded-3xl border text-left flex flex-col justify-between ${
-                    highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-100 shadow-lg'
-                  }`}
-                >
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-mono uppercase bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md font-bold">
-                        {story.category}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                        <Users size={12} />
-                        {story.beneficiary}
-                      </span>
-                    </div>
-                    
-                    <h3 className="font-display font-extrabold text-lg text-slate-900 leading-tight">
-                      {story.headline}
-                    </h3>
-
-                    {/* Interactive Slider Area */}
-                    <div className="relative h-60 w-full rounded-2xl overflow-hidden select-none border border-slate-200">
-                      {/* Before Image */}
-                      <img 
-                        src={story.beforeImage} 
-                        alt="Before Status" 
-                        className="absolute inset-0 w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute top-2 left-2 bg-rose-600/90 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded">
-                        BEFORE DISTRESS
-                      </div>
-
-                      {/* After Image with clipping mask controlled by pos */}
-                      <div 
-                        className="absolute inset-0 w-full h-full"
-                        style={{ clipPath: `polygon(0 0, ${pos}% 0, ${pos}% 100%, 0 100%)` }}
-                      >
-                        <img 
-                          src={story.afterImage} 
-                          alt="After Success" 
-                          className="absolute inset-0 w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute top-2 left-2 bg-emerald-600/95 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded">
-                          AFTER TRANSFORMATION
-                        </div>
-                      </div>
-
-                      {/* Slider Control Line */}
-                      <div 
-                        className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize z-20 flex items-center justify-center"
-                        style={{ left: `${pos}%` }}
-                      >
-                        <div className="w-8 h-8 rounded-full bg-emerald-800 border-2 border-white flex items-center justify-center shadow-lg text-white">
-                          <Sliders size={12} />
-                        </div>
-                      </div>
-
-                      {/* Native Hidden Range Input covering the area */}
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max="100" 
-                        value={pos} 
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setSliderPositions(prev => ({ ...prev, [story.id]: val }));
-                        }}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-30"
-                      />
-                    </div>
-
-                    {/* Dynamic Text Explanations */}
-                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 text-xs">
-                      <div>
-                        <h4 className="font-bold text-rose-600 uppercase tracking-wide text-[9px] mb-1">Traditional State</h4>
-                        <p className="text-slate-500 leading-relaxed font-sans">{story.beforeText}</p>
-                      </div>
-                      <div className="border-l border-slate-100 pl-3">
-                        <h4 className="font-bold text-emerald-600 uppercase tracking-wide text-[9px] mb-1">Raita Mitra Built</h4>
-                        <p className="text-slate-500 leading-relaxed font-sans">{story.afterText}</p>
-                      </div>
-                    </div>
-
-                    {/* Direct Immersive Documentary Link */}
-                    <button 
-                      onClick={() => {
-                        const slugs: Record<string, string> = {
-                          "ba-farmer": "transforming-farmer-livelihoods",
-                          "ba-women": "women-entrepreneurship-success",
-                          "ba-youth": "rural-youth-ai-skills"
-                        };
-                        const slug = slugs[story.id];
-                        if (slug) {
-                          setActivePage(`impact-stories/${slug}`);
-                        }
-                      }}
-                      className="w-full mt-4 py-2 rounded-xl text-[10px] font-mono font-bold tracking-wider bg-emerald-900/5 hover:bg-emerald-900 text-emerald-800 hover:text-white transition-all border border-emerald-900/10 flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <Sparkles size={11} />
-                      EXPLORE IMMERSIVE DOCUMENTARY
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* SECTION 5: SUCCESS STORIES GRID (MASONRY FILTER CARDS) */}
       <section className="py-20 max-w-7xl mx-auto px-4" id="success-masonry">
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-10">
@@ -867,18 +788,7 @@ export default function ImpactStories({ setActivePage, highContrast }: ImpactSto
                 <div className="px-6 pb-6 pt-2">
                   <button 
                     onClick={() => {
-                      const slugs: Record<string, string> = {
-                        "sc-agri": "transforming-farmer-livelihoods",
-                        "sc-women": "women-entrepreneurship-success",
-                        "sc-edu": "rural-youth-ai-skills",
-                        "sc-env": "climate-action-community"
-                      };
-                      const slug = slugs[story.id];
-                      if (slug) {
-                        setActivePage(`impact-stories/${slug}`);
-                      } else {
-                        setActiveStoryModal(story);
-                      }
+                      setActiveStoryModal(story);
                     }}
                     className="w-full py-2.5 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 text-slate-700 cursor-pointer flex items-center justify-center gap-1.5"
                   >
@@ -1530,130 +1440,7 @@ export default function ImpactStories({ setActivePage, highContrast }: ImpactSto
         </div>
       </section>
 
-      {/* SECTION 10: PHOTO GALLERY SECTION (PINTEREST MASONRY) */}
-      <section className="py-20 max-w-7xl mx-auto px-4" id="photo-gallery">
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
-          <span className="text-xs uppercase font-mono tracking-wider text-gold font-bold">Field Records</span>
-          <h2 className={`text-2xl md:text-4xl font-display font-extrabold ${
-            highContrast ? 'text-white' : 'text-slate-900'
-          }`}>
-            Impact In Pictures
-          </h2>
-          <p className="text-sm text-slate-500 max-w-xl mx-auto">
-            Click on any verified field photograph to read detail descriptions or examine high resolution versions.
-          </p>
-        </div>
 
-        {/* Pinterest Masonry style layout */}
-        <div className="columns-1 sm:columns-2 lg:columns-4 gap-6 space-y-6">
-          {galleryImages.map((image, idx) => (
-            <div 
-              key={idx}
-              onClick={() => {
-                setActiveLightboxImage(image.src);
-                setActiveLightboxTitle(`${image.category}: ${image.title}`);
-              }}
-              className="relative break-inside-avoid rounded-2xl overflow-hidden group cursor-pointer border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300"
-            >
-              <img 
-                src={image.src} 
-                alt={image.title} 
-                className="w-full object-cover rounded-2xl group-hover:scale-103 transition-transform duration-500"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 text-white text-left">
-                <span className="text-[9px] font-mono uppercase bg-gold text-slate-900 px-2 py-0.5 rounded self-start font-bold mb-1">
-                  {image.category}
-                </span>
-                <p className="font-display font-bold text-xs">{image.title}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* SECTION 11: ANNUAL IMPACT REPORT PREVIEW (PREMIUM DOWNLOAD CARD) */}
-      <section className="py-12 max-w-4xl mx-auto px-4" id="annual-report">
-        <div className={`p-8 md:p-12 rounded-3xl border text-left grid grid-cols-1 md:grid-cols-12 gap-8 items-center ${
-          highContrast ? 'bg-black border-2 border-white text-white' : 'bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-950 text-white shadow-xl'
-        }`}>
-          
-          <div className="md:col-span-8 space-y-4">
-            <span className="text-xs uppercase font-mono tracking-wider text-gold font-bold">
-              Annual Audit Complete
-            </span>
-            <h3 className="text-2xl md:text-3xl font-display font-extrabold leading-tight">
-              Download Our Annual Impact Report
-            </h3>
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              Examine auditable expense ratios, geographic breakdowns, and verification indexes approved by third-party auditors.
-            </p>
-
-            <div className="flex flex-wrap gap-4 pt-2">
-              <button 
-                onClick={triggerReportDownload}
-                disabled={isDownloadingReport}
-                className="px-6 py-3 rounded-xl bg-gold hover:bg-yellow-400 text-slate-900 font-bold text-xs cursor-pointer transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download size={14} />
-                {isDownloadingReport ? "Assembling Certified Document..." : "Download Report"}
-              </button>
-              
-              <button 
-                onClick={() => setActivePage('compliance')}
-                className="px-6 py-3 rounded-xl border border-white/20 hover:bg-white/10 text-white font-bold text-xs cursor-pointer transition-all"
-              >
-                Verify Tax Compliance
-              </button>
-            </div>
-
-            {/* Simulated progress indicator */}
-            {isDownloadingReport && (
-              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-2 mt-4 animate-pulse">
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <div className="w-4 h-4 rounded-full border-2 border-gold border-t-transparent animate-spin"></div>
-                  <span>{downloadStep}</span>
-                </div>
-                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-gold h-full animate-progress rounded-full"></div>
-                </div>
-              </div>
-            )}
-
-            {downloadSuccess && (
-              <div className="p-4 bg-emerald-950/80 border border-emerald-500/30 rounded-xl flex items-start gap-3 mt-4 text-emerald-300">
-                <CheckCircle size={18} className="shrink-0 mt-0.5" />
-                <div className="text-xs space-y-1">
-                  <p className="font-bold">Brochure Compiled & Download Triggered Successfully!</p>
-                  <p className="text-slate-400 font-mono text-[10px]">Reference Darpan ID Verification Complete.</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Graphical Report Cover Thumbnail */}
-          <div className="md:col-span-4 flex justify-center">
-            <div className="w-40 h-52 bg-gradient-to-t from-emerald-950 to-emerald-900 border-2 border-gold/40 rounded-xl shadow-2xl p-4 flex flex-col justify-between text-left relative overflow-hidden group">
-              <div className="absolute inset-0 bg-radial-gradient from-white/10 to-transparent pointer-events-none"></div>
-              
-              <div className="space-y-1 z-10">
-                <span className="text-[8px] font-mono uppercase bg-gold text-slate-950 px-1 py-0.5 rounded leading-none font-bold">
-                  PDF REPORT
-                </span>
-                <h4 className="font-display font-extrabold text-xs text-white leading-tight uppercase tracking-wider pt-2">
-                  Raita Mitra <br />Impact 2026
-                </h4>
-              </div>
-
-              <div className="z-10 space-y-1">
-                <div className="w-8 h-0.5 bg-gold"></div>
-                <p className="text-[8px] font-mono text-slate-400 uppercase">AUDITED STATS</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
 
       {/* SECTION 12: CSR PARTNERSHIP BANNER */}
       <section className={`py-20 text-center ${highContrast ? 'bg-black border-t-2 border-white text-white' : 'bg-emerald-950 text-white'}`} id="csr-partnership">

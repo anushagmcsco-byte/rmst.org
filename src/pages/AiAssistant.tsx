@@ -67,7 +67,7 @@ export default function AiAssistant({
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.length > 0) return parsed;
+        if (parsed && Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {
         console.error('Error loading sessions', e);
       }
@@ -454,15 +454,49 @@ export default function AiAssistant({
       return;
     }
     setMeetingBooked(true);
+
+    // POST scheduled meeting request to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Partner Onboarding',
+        name: meetingForm.name,
+        email: meetingForm.email,
+        phone: '',
+        subject: `AI Copilot Meeting: ${meetingForm.topic}`,
+        message: `Booked an AI-assisted session. Company: ${meetingForm.company || 'N/A'}. Date: ${meetingForm.date} at ${meetingForm.time || '10:00 AM'}.`,
+        metadata: {
+          company: meetingForm.company,
+          date: meetingForm.date,
+          time: meetingForm.time || '10:00 AM',
+          topic: meetingForm.topic
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('AI assistant meeting logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging AI assistant meeting:', err);
+    });
+
     setTimeout(() => {
       setMeetingBooked(false);
       setShowScheduleDialog(false);
+      const nameSaved = meetingForm.name;
+      const emailSaved = meetingForm.email;
+      const topicSaved = meetingForm.topic;
+      const dateSaved = meetingForm.date;
+      const timeSaved = meetingForm.time || '10:00 AM';
+
       setMeetingForm({ name: '', company: '', email: '', date: '', time: '', topic: 'CSR Partnership' });
       // Add success confirmation message into chat
       const confirmMessage: Message = {
         id: Math.random().toString(),
         sender: 'assistant',
-        text: `### Meeting Confirmed 📅\n\nThank you, **${meetingForm.name}**! A virtual session on **${meetingForm.topic}** has been scheduled for **${meetingForm.date}** at **${meetingForm.time || '10:00 AM'}**.\n\nA calendar invitation with details has been sent to **${meetingForm.email}**.\n\nOur corporate relation directors will connect with you. If you need any immediate preparation documents, let me know!`,
+        text: `### Meeting Confirmed 📅\n\nThank you, **${nameSaved}**! A virtual session on **${topicSaved}** has been scheduled for **${dateSaved}** at **${timeSaved}**.\n\nA calendar invitation with details has been sent to **${emailSaved}**.\n\nOur corporate relation directors will connect with you. If you need any immediate preparation documents, let me know!`,
         timestamp: new Date()
       };
       setSessions(prev => prev.map(s => {

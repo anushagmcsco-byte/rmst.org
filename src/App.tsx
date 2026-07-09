@@ -39,6 +39,9 @@ import AdminDashboard from './pages/AdminDashboard';
 // Search Data references for the global engine
 import { programsData } from './data/programs';
 import { complianceDocuments } from './data/compliance';
+import { RICH_ARTICLES } from './data/blogArticles';
+import { RICH_EVENTS } from './data/events';
+import { impactStories } from './data/stories';
 
 export default function App() {
   // Get initial page from hash or default to 'home'
@@ -71,7 +74,10 @@ export default function App() {
     const saved = localStorage.getItem('raita_mitra_seo_config');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.home) {
+          return parsed;
+        }
       } catch (e) {
         console.error('Error parsing stored SEO config:', e);
       }
@@ -213,48 +219,89 @@ export default function App() {
     else if (activePage.startsWith('events/')) pageKey = 'events';
     else if (activePage.startsWith('impact-stories/')) pageKey = 'stories';
 
-    const currentSeo = seoConfig[pageKey] || seoConfig['home'] || {
-      title: 'Raita Mitra Trust',
-      description: 'Empowering Farmers and Rural Communities.',
+    const currentSeo = (seoConfig && seoConfig[pageKey]) || (seoConfig && seoConfig['home']) || {
+      title: 'Raita Mitra Trust | Empowering Farmers & Rural Communities',
+      description: 'Empowering small farmers in North Karnataka through solar micro-irrigation, sustainable organic agriculture, digital skills, and certified field networks.',
       futureImage: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600'
     };
 
+    let finalTitle = currentSeo.title;
+    let finalDesc = currentSeo.description;
+    let finalImage = currentSeo.futureImage;
+
+    // Resolve specific SEO for dynamic program pages
+    if (activePage.startsWith('programs/')) {
+      const slug = activePage.replace('programs/', '');
+      const program = programsData.find(p => p.id === slug);
+      if (program) {
+        finalTitle = `${program.title} | Our Programs | Raita Mitra Trust`;
+        finalDesc = program.description || program.tagline;
+        finalImage = program.image;
+      }
+    }
+    // Resolve specific SEO for dynamic blog pages
+    else if (activePage.startsWith('blog/')) {
+      const slug = activePage.replace('blog/', '');
+      const article = RICH_ARTICLES.find(a => a.slug === slug);
+      if (article) {
+        finalTitle = `${article.title} | News & Blog | Raita Mitra Trust`;
+        finalDesc = article.summary;
+        finalImage = article.image;
+      }
+    }
+    // Resolve specific SEO for dynamic event pages
+    else if (activePage.startsWith('events/')) {
+      const slug = activePage.replace('events/', '');
+      const event = RICH_EVENTS.find(e => e.slug === slug);
+      if (event) {
+        finalTitle = `${event.title} | Upcoming Events | Raita Mitra Trust`;
+        finalDesc = event.description || event.detailedInfo;
+        finalImage = event.image;
+      }
+    }
+    // Resolve specific SEO for dynamic impact story pages
+    else if (activePage.startsWith('impact-stories/')) {
+      const slug = activePage.replace('impact-stories/', '');
+      const story = impactStories.find(s => s.id === slug);
+      if (story) {
+        finalTitle = `${story.title} | Impact Stories | Raita Mitra Trust`;
+        finalDesc = story.quote || story.beforeTrust;
+        finalImage = story.image;
+      }
+    }
+
     // 1. Update Title
-    document.title = currentSeo.title;
+    document.title = finalTitle;
 
-    // 2. Update Description
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta');
-      metaDesc.setAttribute('name', 'description');
-      document.head.appendChild(metaDesc);
-    }
-    metaDesc.setAttribute('content', currentSeo.description);
+    // Helper to safely find or create a meta tag
+    const setMetaTag = (selector: string, attrName: string, attrVal: string, content: string) => {
+      let el = document.querySelector(selector);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attrName, attrVal);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
 
-    // 3. Update Open Graph properties
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (!ogTitle) {
-      ogTitle = document.createElement('meta');
-      ogTitle.setAttribute('property', 'og:title');
-      document.head.appendChild(ogTitle);
-    }
-    ogTitle.setAttribute('content', currentSeo.title);
+    // 2. Standard Meta Tags
+    setMetaTag('meta[name="description"]', 'name', 'description', finalDesc);
+    setMetaTag('meta[name="image"]', 'name', 'image', finalImage);
+    setMetaTag('meta[name="keywords"]', 'name', 'keywords', 'raita mitra trust, sustainable agriculture, rural development, karnataka NGO, smart farming, women empowerment');
 
-    let ogDesc = document.querySelector('meta[property="og:description"]');
-    if (!ogDesc) {
-      ogDesc = document.createElement('meta');
-      ogDesc.setAttribute('property', 'og:description');
-      document.head.appendChild(ogDesc);
-    }
-    ogDesc.setAttribute('content', currentSeo.description);
+    // 3. Open Graph Properties (Facebook / LinkedIn)
+    setMetaTag('meta[property="og:title"]', 'property', 'og:title', finalTitle);
+    setMetaTag('meta[property="og:description"]', 'property', 'og:description', finalDesc);
+    setMetaTag('meta[property="og:image"]', 'property', 'og:image', finalImage);
+    setMetaTag('meta[property="og:type"]', 'property', 'og:type', 'website');
+    setMetaTag('meta[property="og:site_name"]', 'property', 'og:site_name', 'Raita Mitra Trust');
 
-    let ogImage = document.querySelector('meta[property="og:image"]');
-    if (!ogImage) {
-      ogImage = document.createElement('meta');
-      ogImage.setAttribute('property', 'og:image');
-      document.head.appendChild(ogImage);
-    }
-    ogImage.setAttribute('content', currentSeo.futureImage);
+    // 4. Twitter Card Properties
+    setMetaTag('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image');
+    setMetaTag('meta[name="twitter:title"]', 'name', 'twitter:title', finalTitle);
+    setMetaTag('meta[name="twitter:description"]', 'name', 'twitter:description', finalDesc);
+    setMetaTag('meta[name="twitter:image"]', 'name', 'twitter:image', finalImage);
+
   }, [activePage, seoConfig]);
 
   // Update hash when activePage changes to make pages dynamic

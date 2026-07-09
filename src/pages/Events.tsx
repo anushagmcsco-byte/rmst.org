@@ -303,7 +303,10 @@ export default function Events({ setActivePage, highContrast }: EventsProps) {
     try {
       const stored = localStorage.getItem('raita_mitra_events_list');
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed)) {
+          return parsed;
+        }
       }
     } catch (e) {
       console.error(e);
@@ -378,12 +381,43 @@ export default function Events({ setActivePage, highContrast }: EventsProps) {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    const evt = eventsList.find(item => item.id === regForm.eventId);
+
+    // POST event registration to Server backend
+    fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        formType: 'Support Ticket', // Using support ticket / registration category
+        name: regForm.fullName,
+        email: regForm.email,
+        phone: regForm.phone,
+        subject: `Event Registration: ${evt?.title || 'Unknown Event'}`,
+        message: regForm.comments || `Registration for event id: ${regForm.eventId}. City: ${regForm.city}`,
+        metadata: {
+          city: regForm.city,
+          organization: regForm.organization,
+          eventId: regForm.eventId,
+          eventTitle: evt?.title || 'Unknown Event',
+          participantsCount: regForm.participantsCount,
+          comments: regForm.comments
+        }
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Event registration logged:', data);
+    })
+    .catch(err => {
+      console.error('Error logging event registration:', err);
+    });
+
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
       
       // Decrease seat count dynamically for simulated UX
-      const evt = eventsList.find(item => item.id === regForm.eventId);
       if (evt && evt.seatsRemaining > 0) {
         evt.seatsRemaining = Math.max(0, evt.seatsRemaining - regForm.participantsCount);
         setEventsList([...eventsList]);
@@ -396,6 +430,29 @@ export default function Events({ setActivePage, highContrast }: EventsProps) {
     e.preventDefault();
     if (newsletterName && newsletterEmail) {
       setNewsletterSuccess(true);
+
+      // POST newsletter signup to Server backend
+      fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formType: 'Newsletter Signup',
+          name: newsletterName,
+          email: newsletterEmail,
+          phone: '',
+          subject: 'Events Newsletter Signup',
+          message: 'Subscribed to Events & Workshops Hub newsletters.',
+          metadata: { page: 'Events & Workshops Hub' }
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('Events page newsletter signup logged:', data);
+      })
+      .catch(err => {
+        console.error('Error logging newsletter signup:', err);
+      });
+
       setTimeout(() => {
         setNewsletterSuccess(false);
         setNewsletterName('');
