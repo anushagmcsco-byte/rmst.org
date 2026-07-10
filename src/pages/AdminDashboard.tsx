@@ -121,6 +121,10 @@ const SYSTEM_HEALTH_METRICS = {
 export default function AdminDashboard({ highContrast, setActivePage, seoConfig, setSeoConfig }: AdminDashboardProps) {
   const isFirstRender = useRef(true);
   const isLoadedFromServer = useRef(false);
+  const isBlogsLoadedFromServer = useRef(false);
+  const isEventsLoadedFromServer = useRef(false);
+  const isJobsLoadedFromServer = useRef(false);
+  const isSeoLoadedFromServer = useRef(false);
 
   // Custom Confirmation Dialog State
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -340,13 +344,71 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     }));
   });
 
-  // Sync state to local storage
+  // Load blogs list from server on mount
+  useEffect(() => {
+    fetch('/api/blogs')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          isBlogsLoadedFromServer.current = true;
+          setBlogsList(data);
+        }
+      })
+      .catch(err => console.warn('Failed to load blogs from server, falling back to local storage:', err));
+  }, []);
+
+  // Sync blogs list state to local storage & server
   useEffect(() => {
     localStorage.setItem('raita_mitra_blogs_list', JSON.stringify(blogsList));
+    
+    if (isBlogsLoadedFromServer.current) {
+      isBlogsLoadedFromServer.current = false;
+      return;
+    }
+    if (isFirstRender.current) {
+      // isFirstRender.current is shared or we can bypass it for safety since we check isBlogsLoadedFromServer
+    }
+
+    fetch('/api/blogs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blogsList })
+    }).catch(err => console.error('Failed to sync blogs to server:', err));
   }, [blogsList]);
 
+  // Load events list from server on mount
+  useEffect(() => {
+    fetch('/api/events')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          isEventsLoadedFromServer.current = true;
+          setEventsList(data);
+        }
+      })
+      .catch(err => console.warn('Failed to load events from server, falling back to local storage:', err));
+  }, []);
+
+  // Sync events list state to local storage & server
   useEffect(() => {
     localStorage.setItem('raita_mitra_events_list', JSON.stringify(eventsList));
+    
+    if (isEventsLoadedFromServer.current) {
+      isEventsLoadedFromServer.current = false;
+      return;
+    }
+
+    fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventsList })
+    }).catch(err => console.error('Failed to sync events to server:', err));
   }, [eventsList]);
 
   // Load gallery list from server on mount
@@ -496,8 +558,36 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     ];
   });
 
+  // Load jobs list from server on mount
+  useEffect(() => {
+    fetch('/api/jobs')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          isJobsLoadedFromServer.current = true;
+          setJobsList(data);
+        }
+      })
+      .catch(err => console.warn('Failed to load jobs from server, falling back to local storage:', err));
+  }, []);
+
+  // Sync jobs list state to local storage & server
   useEffect(() => {
     localStorage.setItem('raita_mitra_jobs', JSON.stringify(jobsList));
+    
+    if (isJobsLoadedFromServer.current) {
+      isJobsLoadedFromServer.current = false;
+      return;
+    }
+
+    fetch('/api/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobsList })
+    }).catch(err => console.error('Failed to sync jobs to server:', err));
   }, [jobsList]);
 
   const [editingJob, setEditingJob] = useState<any | null>(null);
@@ -1313,12 +1403,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingCms) {
-                                          setNewCmsForm({ ...newCmsForm, image: fakeUrl, imageName: file.name });
-                                        } else {
-                                          setEditingCms({ ...editingCms, image: fakeUrl, imageName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingCms) {
+                                            setNewCmsForm({ ...newCmsForm, image: base64Url, imageName: file.name });
+                                          } else {
+                                            setEditingCms({ ...editingCms, image: base64Url, imageName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -1338,12 +1432,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingCms) {
-                                          setNewCmsForm({ ...newCmsForm, video: fakeUrl, videoName: file.name });
-                                        } else {
-                                          setEditingCms({ ...editingCms, video: fakeUrl, videoName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingCms) {
+                                            setNewCmsForm({ ...newCmsForm, video: base64Url, videoName: file.name });
+                                          } else {
+                                            setEditingCms({ ...editingCms, video: base64Url, videoName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -2118,12 +2216,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingEvent) {
-                                          setNewEventForm({ ...newEventForm, image: fakeUrl, imageName: file.name });
-                                        } else {
-                                          setEditingEvent({ ...editingEvent, image: fakeUrl, imageName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingEvent) {
+                                            setNewEventForm({ ...newEventForm, image: base64Url, imageName: file.name });
+                                          } else {
+                                            setEditingEvent({ ...editingEvent, image: base64Url, imageName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -2143,12 +2245,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingEvent) {
-                                          setNewEventForm({ ...newEventForm, video: fakeUrl, videoName: file.name });
-                                        } else {
-                                          setEditingEvent({ ...editingEvent, video: fakeUrl, videoName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingEvent) {
+                                            setNewEventForm({ ...newEventForm, video: base64Url, videoName: file.name });
+                                          } else {
+                                            setEditingEvent({ ...editingEvent, video: base64Url, videoName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -2830,17 +2936,21 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         onChange={(e) => {
                                           const file = e.target.files?.[0];
                                           if (file) {
-                                            const fakeUrl = URL.createObjectURL(file);
-                                            if (setSeoConfig && seoConfig) {
-                                              setSeoConfig({
-                                                ...seoConfig,
-                                                [pageKey]: {
-                                                  ...details,
-                                                  futureImage: fakeUrl,
-                                                  imageName: file.name
-                                                }
-                                              });
-                                            }
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                              const base64Url = reader.result as string;
+                                              if (setSeoConfig && seoConfig) {
+                                                setSeoConfig({
+                                                  ...seoConfig,
+                                                  [pageKey]: {
+                                                    ...details,
+                                                    futureImage: base64Url,
+                                                    imageName: file.name
+                                                  }
+                                                });
+                                              }
+                                            };
+                                            reader.readAsDataURL(file);
                                           }
                                         }}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -2860,17 +2970,21 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         onChange={(e) => {
                                           const file = e.target.files?.[0];
                                           if (file) {
-                                            const fakeUrl = URL.createObjectURL(file);
-                                            if (setSeoConfig && seoConfig) {
-                                              setSeoConfig({
-                                                ...seoConfig,
-                                                [pageKey]: {
-                                                  ...details,
-                                                  futureVideo: fakeUrl,
-                                                  videoName: file.name
-                                                }
-                                              });
-                                            }
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                              const base64Url = reader.result as string;
+                                              if (setSeoConfig && seoConfig) {
+                                                setSeoConfig({
+                                                  ...seoConfig,
+                                                  [pageKey]: {
+                                                    ...details,
+                                                    futureVideo: base64Url,
+                                                    videoName: file.name
+                                                  }
+                                                });
+                                              }
+                                            };
+                                            reader.readAsDataURL(file);
                                           }
                                         }}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -3095,12 +3209,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingProgram) {
-                                          setNewProgramForm({ ...newProgramForm, image: fakeUrl, imageName: file.name });
-                                        } else {
-                                          setEditingProgram({ ...editingProgram, image: fakeUrl, imageName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingProgram) {
+                                            setNewProgramForm({ ...newProgramForm, image: base64Url, imageName: file.name });
+                                          } else {
+                                            setEditingProgram({ ...editingProgram, image: base64Url, imageName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -3120,12 +3238,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingProgram) {
-                                          setNewProgramForm({ ...newProgramForm, video: fakeUrl, videoName: file.name });
-                                        } else {
-                                          setEditingProgram({ ...editingProgram, video: fakeUrl, videoName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingProgram) {
+                                            setNewProgramForm({ ...newProgramForm, video: base64Url, videoName: file.name });
+                                          } else {
+                                            setEditingProgram({ ...editingProgram, video: base64Url, videoName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -3478,12 +3600,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingDonor) {
-                                          setNewDonorForm({ ...newDonorForm, image: fakeUrl, imageName: file.name });
-                                        } else {
-                                          setEditingDonor({ ...editingDonor, image: fakeUrl, imageName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingDonor) {
+                                            setNewDonorForm({ ...newDonorForm, image: base64Url, imageName: file.name });
+                                          } else {
+                                            setEditingDonor({ ...editingDonor, image: base64Url, imageName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -3503,12 +3629,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingDonor) {
-                                          setNewDonorForm({ ...newDonorForm, video: fakeUrl, videoName: file.name });
-                                        } else {
-                                          setEditingDonor({ ...editingDonor, video: fakeUrl, videoName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingDonor) {
+                                            setNewDonorForm({ ...newDonorForm, video: base64Url, videoName: file.name });
+                                          } else {
+                                            setEditingDonor({ ...editingDonor, video: base64Url, videoName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -3860,12 +3990,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingVolunteer) {
-                                          setNewVolunteerForm({ ...newVolunteerForm, image: fakeUrl, imageName: file.name });
-                                        } else {
-                                          setEditingVolunteer({ ...editingVolunteer, image: fakeUrl, imageName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingVolunteer) {
+                                            setNewVolunteerForm({ ...newVolunteerForm, image: base64Url, imageName: file.name });
+                                          } else {
+                                            setEditingVolunteer({ ...editingVolunteer, image: base64Url, imageName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -3885,12 +4019,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];
                                       if (file) {
-                                        const fakeUrl = URL.createObjectURL(file);
-                                        if (isCreatingVolunteer) {
-                                          setNewVolunteerForm({ ...newVolunteerForm, video: fakeUrl, videoName: file.name });
-                                        } else {
-                                          setEditingVolunteer({ ...editingVolunteer, video: fakeUrl, videoName: file.name });
-                                        }
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                          const base64Url = reader.result as string;
+                                          if (isCreatingVolunteer) {
+                                            setNewVolunteerForm({ ...newVolunteerForm, video: base64Url, videoName: file.name });
+                                          } else {
+                                            setEditingVolunteer({ ...editingVolunteer, video: base64Url, videoName: file.name });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
                                       }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"

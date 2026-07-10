@@ -314,6 +314,22 @@ export default function Events({ setActivePage, highContrast }: EventsProps) {
     return EVENTS_DATA;
   });
 
+  // Fetch events from server on mount
+  useEffect(() => {
+    fetch('/api/events')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setEventsList(data);
+          localStorage.setItem('raita_mitra_events_list', JSON.stringify(data));
+        }
+      })
+      .catch(err => console.warn('Failed to load events from server:', err));
+  }, []);
+
   // States
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [calendarView, setCalendarView] = useState<'month' | 'week' | 'agenda'>('month');

@@ -376,6 +376,22 @@ export default function NewsBlog({ setActivePage, highContrast }: NewsBlogProps)
     return RICH_ARTICLES;
   });
 
+  // Fetch blogs from server on mount
+  useEffect(() => {
+    fetch('/api/blogs')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setBlogsList(data);
+          localStorage.setItem('raita_mitra_blogs_list', JSON.stringify(data));
+        }
+      })
+      .catch(err => console.warn('Failed to load blogs from server:', err));
+  }, []);
+
   // Navigation & Scroll resets
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as any });

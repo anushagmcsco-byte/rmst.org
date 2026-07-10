@@ -12,6 +12,10 @@ dotenv.config();
 const SUBMISSIONS_FILE = path.join(process.cwd(), 'submissions.json');
 const CONFIG_FILE = path.join(process.cwd(), 'sheets_config.json');
 const GALLERY_FILE = path.join(process.cwd(), 'gallery.json');
+const BLOGS_FILE = path.join(process.cwd(), 'blogs.json');
+const EVENTS_FILE = path.join(process.cwd(), 'events.json');
+const JOBS_FILE = path.join(process.cwd(), 'jobs.json');
+const SEO_FILE = path.join(process.cwd(), 'seo.json');
 
 const DEFAULT_GALLERY = [
   {
@@ -148,6 +152,82 @@ function saveSheetsConfig(config: any) {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
   } catch (err) {
     console.error('Error writing sheets config:', err);
+  }
+}
+
+// Helpers for blogs
+function getBlogs() {
+  try {
+    if (!fs.existsSync(BLOGS_FILE)) return [];
+    return JSON.parse(fs.readFileSync(BLOGS_FILE, 'utf-8'));
+  } catch (err) {
+    console.error('Error reading blogs:', err);
+    return [];
+  }
+}
+
+function saveBlogs(blogs: any[]) {
+  try {
+    fs.writeFileSync(BLOGS_FILE, JSON.stringify(blogs, null, 2));
+  } catch (err) {
+    console.error('Error writing blogs:', err);
+  }
+}
+
+// Helpers for events
+function getEvents() {
+  try {
+    if (!fs.existsSync(EVENTS_FILE)) return [];
+    return JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf-8'));
+  } catch (err) {
+    console.error('Error reading events:', err);
+    return [];
+  }
+}
+
+function saveEvents(events: any[]) {
+  try {
+    fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2));
+  } catch (err) {
+    console.error('Error writing events:', err);
+  }
+}
+
+// Helpers for jobs
+function getJobs() {
+  try {
+    if (!fs.existsSync(JOBS_FILE)) return [];
+    return JSON.parse(fs.readFileSync(JOBS_FILE, 'utf-8'));
+  } catch (err) {
+    console.error('Error reading jobs:', err);
+    return [];
+  }
+}
+
+function saveJobs(jobs: any[]) {
+  try {
+    fs.writeFileSync(JOBS_FILE, JSON.stringify(jobs, null, 2));
+  } catch (err) {
+    console.error('Error writing jobs:', err);
+  }
+}
+
+// Helpers for SEO configs
+function getSeo() {
+  try {
+    if (!fs.existsSync(SEO_FILE)) return null;
+    return JSON.parse(fs.readFileSync(SEO_FILE, 'utf-8'));
+  } catch (err) {
+    console.error('Error reading SEO config:', err);
+    return null;
+  }
+}
+
+function saveSeo(seo: any) {
+  try {
+    fs.writeFileSync(SEO_FILE, JSON.stringify(seo, null, 2));
+  } catch (err) {
+    console.error('Error writing SEO config:', err);
   }
 }
 
@@ -355,6 +435,106 @@ Respond strictly based on this. Let's do great things together.`;
       res.json({ success: true, galleryList });
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to save gallery items', details: err.message });
+    }
+  });
+
+  // GET blogs items list
+  app.get('/api/blogs', (req, res) => {
+    try {
+      const blogs = getBlogs();
+      res.json(blogs);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to retrieve blogs', details: err.message });
+    }
+  });
+
+  // POST update/save entire blogs items list
+  app.post('/api/blogs', (req, res) => {
+    try {
+      const { blogsList } = req.body;
+      if (!blogsList || !Array.isArray(blogsList)) {
+        res.status(400).json({ error: 'blogsList must be a valid array' });
+        return;
+      }
+      saveBlogs(blogsList);
+      res.json({ success: true, blogsList });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to save blogs', details: err.message });
+    }
+  });
+
+  // GET events items list
+  app.get('/api/events', (req, res) => {
+    try {
+      const events = getEvents();
+      res.json(events);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to retrieve events', details: err.message });
+    }
+  });
+
+  // POST update/save entire events items list
+  app.post('/api/events', (req, res) => {
+    try {
+      const { eventsList } = req.body;
+      if (!eventsList || !Array.isArray(eventsList)) {
+        res.status(400).json({ error: 'eventsList must be a valid array' });
+        return;
+      }
+      saveEvents(eventsList);
+      res.json({ success: true, eventsList });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to save events', details: err.message });
+    }
+  });
+
+  // GET jobs items list
+  app.get('/api/jobs', (req, res) => {
+    try {
+      const jobs = getJobs();
+      res.json(jobs);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to retrieve jobs', details: err.message });
+    }
+  });
+
+  // POST update/save entire jobs items list
+  app.post('/api/jobs', (req, res) => {
+    try {
+      const { jobsList } = req.body;
+      if (!jobsList || !Array.isArray(jobsList)) {
+        res.status(400).json({ error: 'jobsList must be a valid array' });
+        return;
+      }
+      saveJobs(jobsList);
+      res.json({ success: true, jobsList });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to save jobs', details: err.message });
+    }
+  });
+
+  // GET SEO configuration
+  app.get('/api/seo', (req, res) => {
+    try {
+      const seo = getSeo();
+      res.json(seo || {});
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to retrieve SEO configuration', details: err.message });
+    }
+  });
+
+  // POST update/save SEO configuration
+  app.post('/api/seo', (req, res) => {
+    try {
+      const { seoConfig } = req.body;
+      if (!seoConfig || typeof seoConfig !== 'object') {
+        res.status(400).json({ error: 'seoConfig must be a valid object' });
+        return;
+      }
+      saveSeo(seoConfig);
+      res.json({ success: true, seoConfig });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to save SEO configuration', details: err.message });
     }
   });
 

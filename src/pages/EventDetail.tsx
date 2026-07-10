@@ -51,7 +51,7 @@ interface EventDetailProps {
 
 export default function EventDetail({ slug, setActivePage, highContrast }: EventDetailProps) {
   // Retrieve dynamic events list
-  const eventsList = useMemo(() => {
+  const [eventsList, setEventsList] = useState<any[]>(() => {
     try {
       const stored = localStorage.getItem('raita_mitra_events_list');
       if (stored) {
@@ -64,6 +64,22 @@ export default function EventDetail({ slug, setActivePage, highContrast }: Event
       console.error(e);
     }
     return RICH_EVENTS;
+  });
+
+  // Fetch events from server on mount
+  useEffect(() => {
+    fetch('/api/events')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setEventsList(data);
+          localStorage.setItem('raita_mitra_events_list', JSON.stringify(data));
+        }
+      })
+      .catch(err => console.warn('Failed to load events from server:', err));
   }, []);
 
   // Fallbacks for newly created events that lack full nested properties

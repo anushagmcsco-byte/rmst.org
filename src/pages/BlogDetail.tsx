@@ -51,7 +51,7 @@ interface BlogDetailProps {
 
 export default function BlogDetail({ slug, setActivePage, highContrast }: BlogDetailProps) {
   // Retrieve dynamic blogs list
-  const blogsList = useMemo(() => {
+  const [blogsList, setBlogsList] = useState<any[]>(() => {
     try {
       const stored = localStorage.getItem('raita_mitra_blogs_list');
       if (stored) {
@@ -64,6 +64,22 @@ export default function BlogDetail({ slug, setActivePage, highContrast }: BlogDe
       console.error(e);
     }
     return RICH_ARTICLES;
+  });
+
+  // Fetch blogs from server on mount
+  useEffect(() => {
+    fetch('/api/blogs')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setBlogsList(data);
+          localStorage.setItem('raita_mitra_blogs_list', JSON.stringify(data));
+        }
+      })
+      .catch(err => console.warn('Failed to load blogs from server:', err));
   }, []);
 
   // Fallbacks for newly created articles that lack full nested properties

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -206,9 +206,38 @@ export default function App() {
     };
   });
 
-  // Keep localStorage in sync when seoConfig state changes
+  const isSeoLoadedFromServer = useRef(false);
+
+  // Load SEO config from server on mount
+  useEffect(() => {
+    fetch('/api/seo')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (data && typeof data === 'object' && !Array.isArray(data) && data.home) {
+          isSeoLoadedFromServer.current = true;
+          setSeoConfig(data);
+        }
+      })
+      .catch(err => console.warn('Failed to load SEO config from server:', err));
+  }, []);
+
+  // Keep localStorage in sync when seoConfig state changes and save to server
   useEffect(() => {
     localStorage.setItem('raita_mitra_seo_config', JSON.stringify(seoConfig));
+    
+    if (isSeoLoadedFromServer.current) {
+      isSeoLoadedFromServer.current = false;
+      return;
+    }
+    
+    fetch('/api/seo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seoConfig })
+    }).catch(err => console.error('Failed to sync SEO config to server:', err));
   }, [seoConfig]);
 
   // Synchronize document.title and other meta tags dynamically

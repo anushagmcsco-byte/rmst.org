@@ -191,6 +191,22 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
     ];
   });
 
+  // Fetch jobs from server on mount
+  useEffect(() => {
+    fetch('/api/jobs')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setJobs(data);
+          localStorage.setItem('raita_mitra_jobs', JSON.stringify(data));
+        }
+      })
+      .catch(err => console.warn('Failed to load jobs from server:', err));
+  }, []);
+
   // Keep jobs list synced in real-time when localStorage updates
   useEffect(() => {
     const handleStorageChange = () => {
