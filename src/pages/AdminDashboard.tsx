@@ -119,6 +119,9 @@ const SYSTEM_HEALTH_METRICS = {
 // ============================================================================
 
 export default function AdminDashboard({ highContrast, setActivePage, seoConfig, setSeoConfig }: AdminDashboardProps) {
+  const isFirstRender = useRef(true);
+  const isLoadedFromServer = useRef(false);
+
   // Custom Confirmation Dialog State
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -355,6 +358,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       })
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
+          isLoadedFromServer.current = true;
           setGalleryList(data);
         }
       })
@@ -363,6 +367,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
   useEffect(() => {
     localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(galleryList));
+    
+    // Prevent redundant POST on mount / server load
+    if (isLoadedFromServer.current) {
+      isLoadedFromServer.current = false;
+      return;
+    }
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
     // Save to server-side JSON API
     fetch('/api/gallery', {
       method: 'POST',
