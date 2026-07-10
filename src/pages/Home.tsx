@@ -36,11 +36,59 @@ import KarnatakaImpactMap from '../components/KarnatakaImpactMap';
 import home1 from '../../home_1.jpg';
 import home2 from '../../home_2.jpg';
 import homePartnerWithUs from '../../home_partner_with_us.jpg';
+// Import the new image for success stories
+import shrnappaGouda from '../../home_shrnappa_gouda.jpg';
 
 interface HomeProps {
   setActivePage: (page: string) => void;
   highContrast: boolean;
 }
+
+// Define a type that extends the base story with optional metrics
+interface ExtendedImpactStory {
+  id: number | string;
+  title: string;
+  beneficiaryName: string;
+  location: string;
+  focusArea: string;
+  quote: string;
+  image: string;
+  fullStory: string;
+  metrics?: { label: string; value: string }[];
+}
+
+// Create the updated stories with proper typing
+const updatedImpactStories: ExtendedImpactStory[] = [
+  {
+    id: 999,
+    title: "From Debt to Dignity: Shrnappa Gouda's Organic Transformation",
+    beneficiaryName: 'Shrnappa Gouda',
+    location: 'Haveri Taluk, Karnataka',
+    focusArea: 'Sustainable Agriculture',
+    quote: 'Earlier, I was trapped in a cycle of debt due to costly chemical fertilizers. Raita Mitra introduced me to organic farming and solar-powered drip irrigation. Today, my yields have tripled, and I am completely debt-free.',
+    image: shrnappaGouda,
+    fullStory: 'Shrnappa Gouda, a smallholder farmer from Haveri, was struggling with mounting debts and declining soil fertility. Through Raita Mitra\'s intervention, he adopted organic farming practices, vermicomposting, and solar-powered irrigation. Within 18 months, his income increased by 300%, and he became a mentor to 50+ farmers in his village.',
+    metrics: [
+      { label: 'Income Increase', value: '300%' },
+      { label: 'Debt Cleared', value: '₹2.4 Lakhs' },
+      { label: 'Fertilizer Cost Saved', value: '₹45,000/Year' }
+    ]
+  },
+  // Map the remaining stories from impactStories
+  ...impactStories.map((story: any) => ({
+    id: story.id,
+    title: story.title,
+    beneficiaryName: story.beneficiaryName,
+    location: story.location,
+    focusArea: story.focusArea,
+    quote: story.quote,
+    image: story.image,
+    // Combine narrative, beforeTrust, and afterTrust into fullStory
+    fullStory: story.narrative || `${story.beforeTrust || ''} ${story.afterTrust || ''}`,
+    // Original stories don't have metrics
+    metrics: undefined
+  }))
+];
 
 export default function Home({ setActivePage, highContrast }: HomeProps) {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
@@ -468,89 +516,45 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
       </section>
 
       {/* GROUND LEVEL IMPACT PHOTO SHOWCASE */}
-      <section className={`py-16 px-4 md:px-8 w-full border-b ${
-        highContrast ? 'bg-black border-white text-white' : 'bg-slate-50/40 border-slate-100'
-      }`}>
-        <div className="max-w-7xl mx-auto space-y-12 text-center">
-          <div className="space-y-4 max-w-3xl mx-auto">
-            <span className="text-xs uppercase font-mono tracking-wider text-gold font-bold">Field-Validated Interventions</span>
-            <h2 className={`font-display font-extrabold text-2xl md:text-3xl leading-tight ${
-              highContrast ? 'text-white' : 'text-forest'
-            }`}>
-              Our Active Ground-Level Operations
-            </h2>
-            <p className="text-slate-500 text-sm leading-relaxed max-w-2xl mx-auto">
-              Real-time physical snapshots from our ongoing projects across Karnataka, delivering targeted agricultural support and sustainable livelihood systems.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Image Card 1: Sustainable Agriculture */}
-            <div className={`group relative rounded-3xl overflow-hidden border transition-all duration-300 shadow-md hover:shadow-xl flex flex-col h-full ${
-              highContrast ? 'bg-black border-white' : 'bg-white border-slate-100'
-            }`}>
-              <div className="relative h-64 sm:h-80 overflow-hidden shrink-0">
-                <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors duration-300 z-10" />
-                <img 
-                  src={home1} 
-                  alt="Raita Mitra Sustainable Agriculture Operations" 
-                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                  referrerPolicy="no-referrer"
-                />
-                <span className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full shadow-sm border border-emerald-200/50">
-                  <Sprout size={12} className="text-emerald-600 animate-bounce" />
-                  Eco-Farming Initiative
-                </span>
-              </div>
-              <div className="p-6 text-left space-y-2 flex-grow">
-                <h3 className={`font-display font-bold text-lg ${
-                  highContrast ? 'text-white' : 'text-slate-900'
-                }`}>
-                  Sustainable Farming &amp; Watershed Management
-                </h3>
-                <p className="text-xs text-slate-500 leading-relaxed font-sans">
-                  Direct agricultural interventions in Hubballi. Restoring soil microbiomes, developing decentralized rain-water recharge systems, and transitioning smallholder farmers to zero-debt organic cultivation.
-                </p>
-              </div>
-            </div>
-
-            {/* Image Card 2: Livelihood Training */}
-            <div className={`group relative rounded-3xl overflow-hidden border transition-all duration-300 shadow-md hover:shadow-xl flex flex-col h-full ${
-              highContrast ? 'bg-black border-white' : 'bg-white border-slate-100'
-            }`}>
-              <div className="relative h-64 sm:h-80 overflow-hidden shrink-0">
-                <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors duration-300 z-10" />
-                <img 
-                  src={home2} 
-                  alt="Raita Mitra Women SHG Enterprise Training" 
-                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                  referrerPolicy="no-referrer"
-                />
-                <span className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 text-[10px] font-mono font-extrabold uppercase tracking-widest text-rose-800 bg-rose-50 px-3 py-1.5 rounded-full shadow-sm border border-rose-200/50">
-                  <Laptop size={12} className="text-rose-600" />
-                  Livelihood &amp; SHG Batches
-                </span>
-              </div>
-              <div className="p-6 text-left space-y-2 flex-grow">
-                <h3 className={`font-display font-bold text-lg ${
-                  highContrast ? 'text-white' : 'text-slate-900'
-                }`}>
-                  Women-Led Self-Help Groups &amp; Skill Development
-                </h3>
-                <p className="text-xs text-slate-500 leading-relaxed font-sans">
-                  Empowering rural women through tailoring micro-enterprises, digital literacy certification, and collaborative marketing structures to build high-margin sustainable household incomes.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className={`py-24 px-4 md:px-8 w-full border-b ${highContrast ? 'bg-black border-white' : 'bg-white border-slate-100'}`} id="who-we-are">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           
-          {/* Left Side: Deep Storytelling Text Block */}
-          <div className="lg:col-span-7 space-y-6 text-left animate-fade-in">
+          {/* Left Side: Sophisticated overlapping grid collage */}
+          <div className="lg:col-span-5 relative h-[380px] md:h-[450px]" id="about-image-collage">
+            {/* Primary Background Card */}
+            <div className="absolute top-0 left-0 w-3/4 h-3/4 rounded-3xl overflow-hidden shadow-xl transform -rotate-3 hover:rotate-0 transition-transform duration-500 border border-slate-100">
+              <img 
+                src={home1} 
+                alt="Agriculture land karnataka" 
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            {/* Secondary Foreground Card */}
+            <div className="absolute bottom-0 right-0 w-2/3 h-2/3 rounded-3xl overflow-hidden shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500 border-4 border-white dark:border-slate-900">
+              <img 
+                src={home2} 
+                alt="Women processing crops" 
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            {/* Small Focal Overlay Card */}
+            <div className={`absolute top-1/3 right-1/4 p-4 rounded-2xl shadow-lg border hidden sm:block max-w-[180px] ${
+              highContrast ? 'bg-black border-white text-white' : 'bg-forest text-white'
+            }`}>
+              <div className="flex gap-2 items-center">
+                <CheckCircle2 size={16} className="text-gold" />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider">SECURE TRUST</span>
+              </div>
+              <p className="text-[11px] font-semibold leading-normal mt-1.5 font-display">
+                Governance matching Tata Trusts standards.
+              </p>
+            </div>
+          </div>
+
+          {/* Right Side: Deep Storytelling Text Block */}
+          <div className="lg:col-span-7 space-y-6 text-left">
             <span className="text-xs uppercase font-mono tracking-wider text-gold font-bold">Our Governance Ethos</span>
             <h2 className={`font-display font-extrabold text-3xl md:text-4xl leading-tight ${
               highContrast ? 'text-white' : 'text-forest'
@@ -561,8 +565,26 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
               Raita Mitra Social Trust (R) was established in Hubballi, Karnataka to strengthen rural ecosystems through sustainable agriculture, skill development, women empowerment, health initiatives, climate resilience, and entrepreneurship.
             </p>
             <p className="text-slate-500 text-xs md:text-sm leading-relaxed">
-              We translate institutional CSR capital into audited, localized interventions. Guided by Amartya Sen’s Capability Approach, we prioritize enhancing freedoms and choices for smallholders rather than implementing dry, top-down dependencies.
+              We translate institutional CSR capital into audited, localized interventions. Guided by Amartya Sen's Capability Approach, we prioritize enhancing freedoms and choices for smallholders rather than implementing dry, top-down dependencies.
             </p>
+
+            {/* Checkmark Bento Metrics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3.5 items-start shadow-sm">
+                <CheckCircle2 size={18} className="text-forest shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">100% Geo-tagged Milestones</h4>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Our audits compile physical, photographic, and location-registered logs of every active watershed and solar grid.</p>
+                </div>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3.5 items-start shadow-sm">
+                <CheckCircle2 size={18} className="text-forest shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Zero-Debt Farming Transition</h4>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Eliminating heavy synthetic agricultural cost chains through decentralized vermicomposting and traditional seed vaults.</p>
+                </div>
+              </div>
+            </div>
 
             <div className="pt-4">
               <button 
@@ -571,45 +593,9 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
                   highContrast ? 'text-white underline' : 'text-forest hover:text-forest-light'
                 }`}
               >
-                Learn about our journey &amp; compliance frameworks
+                Learn about our journey & compliance frameworks
                 <ArrowRight size={14} />
               </button>
-            </div>
-          </div>
-
-          {/* Right Side: Governance Integrity Banner & Checkmark Bento Metrics Stacked */}
-          <div className="lg:col-span-5 space-y-6 text-left">
-            {/* Micro Trust Banner matching Tata standards */}
-            <div className={`flex items-start gap-3.5 p-5 rounded-2xl border ${
-              highContrast 
-                ? 'bg-black border-white text-white' 
-                : 'bg-emerald-50/50 border-emerald-100/40 text-emerald-950 shadow-sm'
-            }`}>
-              <ShieldCheck size={24} className="text-emerald-600 shrink-0 mt-0.5" />
-              <div className="text-left space-y-1">
-                <p className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-emerald-800">Governance Integrity Guarantee</p>
-                <p className="text-xs text-slate-600 leading-relaxed font-sans">
-                  Our projects match Tata Trusts &amp; leading transparency guidelines, backed by geo-tagged milestone verification.
-                </p>
-              </div>
-            </div>
-
-            {/* Checkmark Bento Metrics Grid */}
-            <div className="space-y-4">
-              <div className="p-4.5 rounded-2xl bg-slate-50 border border-slate-100/80 flex gap-3.5 items-start shadow-sm">
-                <CheckCircle2 size={18} className="text-forest shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">100% Geo-tagged Milestones</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Our audits compile physical, photographic, and location-registered logs of every active watershed and solar grid.</p>
-                </div>
-              </div>
-              <div className="p-4.5 rounded-2xl bg-slate-50 border border-slate-100/80 flex gap-3.5 items-start shadow-sm">
-                <CheckCircle2 size={18} className="text-forest shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Zero-Debt Farming Transition</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">Eliminating heavy synthetic agricultural cost chains through decentralized vermicomposting and traditional seed vaults.</p>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -850,7 +836,7 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
 
       </section>
 
-      {/* 6. SUCCESS STORIES (Interactive Carousel Section) */}
+      {/* 6. SUCCESS STORIES (Interactive Carousel Section) - UPDATED WITH NEW IMAGE */}
       <section className={`py-24 px-4 md:px-8 w-full border-b ${
         highContrast ? 'bg-black text-white' : 'bg-white border-slate-100'
       }`} id="success-stories">
@@ -869,7 +855,7 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
             {/* Slider Triggers */}
             <div className="flex gap-2">
               <button 
-                onClick={() => setActiveStory((prev) => (prev - 1 + impactStories.length) % impactStories.length)}
+                onClick={() => setActiveStory((prev) => (prev - 1 + updatedImpactStories.length) % updatedImpactStories.length)}
                 className={`p-2.5 rounded-xl border hover:bg-slate-50 cursor-pointer transition-colors ${
                   highContrast ? 'border-white text-white hover:bg-white hover:text-black' : 'border-slate-200 text-slate-700'
                 }`}
@@ -878,7 +864,7 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
                 <ChevronLeft size={16} />
               </button>
               <button 
-                onClick={() => setActiveStory((prev) => (prev + 1) % impactStories.length)}
+                onClick={() => setActiveStory((prev) => (prev + 1) % updatedImpactStories.length)}
                 className={`p-2.5 rounded-xl border hover:bg-slate-50 cursor-pointer transition-colors ${
                   highContrast ? 'border-white text-white hover:bg-white hover:text-black' : 'border-slate-200 text-slate-700'
                 }`}
@@ -907,13 +893,13 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
                 {/* Left image column */}
                 <div className="lg:col-span-5 h-[260px] md:h-[400px] relative w-full">
                   <img 
-                    src={impactStories[activeStory].image} 
-                    alt={impactStories[activeStory].beneficiaryName} 
+                    src={updatedImpactStories[activeStory].image} 
+                    alt={updatedImpactStories[activeStory].beneficiaryName} 
                     className="w-full h-full object-cover object-center"
                     referrerPolicy="no-referrer"
                   />
                   <div className="absolute top-4 left-4 bg-slate-900/80 text-white text-[10px] font-mono tracking-wider px-3 py-1 rounded-full font-bold uppercase backdrop-blur-sm">
-                    {impactStories[activeStory].focusArea}
+                    {updatedImpactStories[activeStory].focusArea}
                   </div>
                 </div>
 
@@ -926,17 +912,31 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
                   <h3 className={`font-display font-extrabold text-xl md:text-3xl leading-snug ${
                     highContrast ? 'text-white' : 'text-slate-800'
                   }`}>
-                    {impactStories[activeStory].title}
+                    {updatedImpactStories[activeStory].title}
                   </h3>
 
                   <p className="text-slate-600 text-sm md:text-base leading-relaxed italic font-serif">
-                    &quot;{impactStories[activeStory].quote}&quot;
+                    &quot;{updatedImpactStories[activeStory].quote}&quot;
                   </p>
+
+                  {/* Conditional Metrics Display - Only show if metrics exist */}
+                  {updatedImpactStories[activeStory].metrics && updatedImpactStories[activeStory].metrics!.length > 0 && (
+                    <div className="grid grid-cols-3 gap-3 pt-2">
+                      {updatedImpactStories[activeStory].metrics!.map((metric: { label: string; value: string }, idx: number) => (
+                        <div key={idx} className={`p-2.5 rounded-xl text-center border ${
+                          highContrast ? 'border-white/20 bg-white/5' : 'border-slate-100 bg-white/50'
+                        }`}>
+                          <p className="text-sm font-extrabold text-forest">{metric.value}</p>
+                          <p className="text-[8px] font-mono text-slate-500 uppercase">{metric.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center border-t border-slate-200/50 pt-6">
                     <div>
-                      <p className="text-xs font-bold text-slate-800 uppercase tracking-wide">{impactStories[activeStory].beneficiaryName}</p>
-                      <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase">{impactStories[activeStory].location}</p>
+                      <p className="text-xs font-bold text-slate-800 uppercase tracking-wide">{updatedImpactStories[activeStory].beneficiaryName}</p>
+                      <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase">{updatedImpactStories[activeStory].location}</p>
                     </div>
                     <button 
                       onClick={() => setActivePage('stories')}
