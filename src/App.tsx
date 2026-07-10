@@ -207,6 +207,7 @@ export default function App() {
   });
 
   const isSeoLoadedFromServer = useRef(false);
+  const isSeoFirstRender = useRef(true);
 
   // Load SEO config from server on mount
   useEffect(() => {
@@ -230,6 +231,10 @@ export default function App() {
     
     if (isSeoLoadedFromServer.current) {
       isSeoLoadedFromServer.current = false;
+      return;
+    }
+    if (isSeoFirstRender.current) {
+      isSeoFirstRender.current = false;
       return;
     }
     

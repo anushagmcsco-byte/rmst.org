@@ -120,10 +120,14 @@ const SYSTEM_HEALTH_METRICS = {
 
 export default function AdminDashboard({ highContrast, setActivePage, seoConfig, setSeoConfig }: AdminDashboardProps) {
   const isFirstRender = useRef(true);
-  const isLoadedFromServer = useRef(false);
+  const isGalleryLoadedFromServer = useRef(false);
+  const isGalleryFirstRender = useRef(true);
   const isBlogsLoadedFromServer = useRef(false);
+  const isBlogsFirstRender = useRef(true);
   const isEventsLoadedFromServer = useRef(false);
+  const isEventsFirstRender = useRef(true);
   const isJobsLoadedFromServer = useRef(false);
+  const isJobsFirstRender = useRef(true);
   const isSeoLoadedFromServer = useRef(false);
 
   // Custom Confirmation Dialog State
@@ -368,8 +372,9 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       isBlogsLoadedFromServer.current = false;
       return;
     }
-    if (isFirstRender.current) {
-      // isFirstRender.current is shared or we can bypass it for safety since we check isBlogsLoadedFromServer
+    if (isBlogsFirstRender.current) {
+      isBlogsFirstRender.current = false;
+      return;
     }
 
     fetch('/api/blogs', {
@@ -403,6 +408,10 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       isEventsLoadedFromServer.current = false;
       return;
     }
+    if (isEventsFirstRender.current) {
+      isEventsFirstRender.current = false;
+      return;
+    }
 
     fetch('/api/events', {
       method: 'POST',
@@ -420,7 +429,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       })
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
-          isLoadedFromServer.current = true;
+          isGalleryLoadedFromServer.current = true;
           setGalleryList(data);
         }
       })
@@ -431,12 +440,12 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(galleryList));
     
     // Prevent redundant POST on mount / server load
-    if (isLoadedFromServer.current) {
-      isLoadedFromServer.current = false;
+    if (isGalleryLoadedFromServer.current) {
+      isGalleryLoadedFromServer.current = false;
       return;
     }
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    if (isGalleryFirstRender.current) {
+      isGalleryFirstRender.current = false;
       return;
     }
 
@@ -580,6 +589,10 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     
     if (isJobsLoadedFromServer.current) {
       isJobsLoadedFromServer.current = false;
+      return;
+    }
+    if (isJobsFirstRender.current) {
+      isJobsFirstRender.current = false;
       return;
     }
 
