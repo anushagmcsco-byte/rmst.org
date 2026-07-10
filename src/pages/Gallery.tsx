@@ -379,7 +379,11 @@ export default function Gallery({ highContrast }: GalleryProps) {
             desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
           }));
           setDynamicGallery(formatted);
-          localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+          try {
+            localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+          } catch (err) {
+            console.warn('LocalStorage quota limit exceeded when saving gallery list:', err);
+          }
         }
       })
       .catch(err => console.warn('Failed to load gallery from server, showing local/fallback gallery:', err));

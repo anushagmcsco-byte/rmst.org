@@ -384,9 +384,13 @@ export default function NewsBlog({ setActivePage, highContrast }: NewsBlogProps)
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setBlogsList(data);
-          localStorage.setItem('raita_mitra_blogs_list', JSON.stringify(data));
+          try {
+            localStorage.setItem('raita_mitra_blogs_list', JSON.stringify(data));
+          } catch (err) {
+            console.warn('LocalStorage quota limit exceeded when saving blogs list:', err);
+          }
         }
       })
       .catch(err => console.warn('Failed to load blogs from server:', err));

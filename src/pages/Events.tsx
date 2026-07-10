@@ -322,9 +322,13 @@ export default function Events({ setActivePage, highContrast }: EventsProps) {
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setEventsList(data);
-          localStorage.setItem('raita_mitra_events_list', JSON.stringify(data));
+          try {
+            localStorage.setItem('raita_mitra_events_list', JSON.stringify(data));
+          } catch (err) {
+            console.warn('LocalStorage quota limit exceeded when saving events list:', err);
+          }
         }
       })
       .catch(err => console.warn('Failed to load events from server:', err));

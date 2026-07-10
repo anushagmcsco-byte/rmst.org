@@ -366,7 +366,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
   // Sync blogs list state to local storage & server
   useEffect(() => {
-    localStorage.setItem('raita_mitra_blogs_list', JSON.stringify(blogsList));
+    try {
+      localStorage.setItem('raita_mitra_blogs_list', JSON.stringify(blogsList));
+    } catch (err) {
+      console.warn('LocalStorage quota limit exceeded for blogs list:', err);
+    }
     
     if (isBlogsLoadedFromServer.current) {
       isBlogsLoadedFromServer.current = false;
@@ -402,7 +406,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
   // Sync events list state to local storage & server
   useEffect(() => {
-    localStorage.setItem('raita_mitra_events_list', JSON.stringify(eventsList));
+    try {
+      localStorage.setItem('raita_mitra_events_list', JSON.stringify(eventsList));
+    } catch (err) {
+      console.warn('LocalStorage quota limit exceeded for events list:', err);
+    }
     
     if (isEventsLoadedFromServer.current) {
       isEventsLoadedFromServer.current = false;
@@ -437,7 +445,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(galleryList));
+    try {
+      localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(galleryList));
+    } catch (err) {
+      console.warn('LocalStorage quota limit exceeded for gallery list:', err);
+    }
     
     // Prevent redundant POST on mount / server load
     if (isGalleryLoadedFromServer.current) {
@@ -585,7 +597,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
   // Sync jobs list state to local storage & server
   useEffect(() => {
-    localStorage.setItem('raita_mitra_jobs', JSON.stringify(jobsList));
+    try {
+      localStorage.setItem('raita_mitra_jobs', JSON.stringify(jobsList));
+    } catch (err) {
+      console.warn('LocalStorage quota limit exceeded for jobs:', err);
+    }
     
     if (isJobsLoadedFromServer.current) {
       isJobsLoadedFromServer.current = false;

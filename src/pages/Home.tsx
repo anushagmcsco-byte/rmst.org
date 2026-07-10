@@ -249,7 +249,11 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
             };
           });
           setGalleryImages(formatted);
-          localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+          try {
+            localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+          } catch (err) {
+            console.warn('LocalStorage quota limit exceeded when saving home gallery list:', err);
+          }
         }
       })
       .catch(err => console.warn('Failed to load home gallery from server:', err));

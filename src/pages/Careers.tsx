@@ -199,9 +199,13 @@ export default function Careers({ setActivePage, highContrast = false }: Careers
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setJobs(data);
-          localStorage.setItem('raita_mitra_jobs', JSON.stringify(data));
+          try {
+            localStorage.setItem('raita_mitra_jobs', JSON.stringify(data));
+          } catch (err) {
+            console.warn('LocalStorage quota limit exceeded when saving jobs list:', err);
+          }
         }
       })
       .catch(err => console.warn('Failed to load jobs from server:', err));
