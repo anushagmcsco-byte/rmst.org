@@ -361,13 +361,13 @@ export default function Gallery({ highContrast }: GalleryProps) {
 
   // Load from server on mount to ensure we are showing up-to-date images across all devices
   useEffect(() => {
-    fetch('/api/gallery')
+    fetch('/api/gallery?t=' + Date.now())
       .then(res => {
         if (!res.ok) throw new Error('API response not ok');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const formatted = data.map((item: any, idx: number) => ({
             id: item.id || `dyn_photo_${idx}`,
             category: item.tags?.[0] || 'Agriculture',

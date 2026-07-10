@@ -350,13 +350,13 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
   // Load blogs list from server on mount
   useEffect(() => {
-    fetch('/api/blogs')
+    fetch('/api/blogs?t=' + Date.now())
       .then(res => {
         if (!res.ok) throw new Error('API response not ok');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           isBlogsLoadedFromServer.current = true;
           setBlogsList(data);
         }
@@ -386,13 +386,13 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
   // Load events list from server on mount
   useEffect(() => {
-    fetch('/api/events')
+    fetch('/api/events?t=' + Date.now())
       .then(res => {
         if (!res.ok) throw new Error('API response not ok');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           isEventsLoadedFromServer.current = true;
           setEventsList(data);
         }
@@ -422,13 +422,13 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
   // Load gallery list from server on mount
   useEffect(() => {
-    fetch('/api/gallery')
+    fetch('/api/gallery?t=' + Date.now())
       .then(res => {
         if (!res.ok) throw new Error('API response not ok');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           isGalleryLoadedFromServer.current = true;
           setGalleryList(data);
         }
@@ -569,13 +569,13 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
   // Load jobs list from server on mount
   useEffect(() => {
-    fetch('/api/jobs')
+    fetch('/api/jobs?t=' + Date.now())
       .then(res => {
         if (!res.ok) throw new Error('API response not ok');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           isJobsLoadedFromServer.current = true;
           setJobsList(data);
         }

@@ -222,13 +222,13 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
 
   // Fetch gallery list from server on mount
   useEffect(() => {
-    fetch('/api/gallery')
+    fetch('/api/gallery?t=' + Date.now())
       .then(res => {
         if (!res.ok) throw new Error('API response not ok');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const formatted = data.map((item: any, idx: number) => {
             const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
             let category = 'agriculture';
