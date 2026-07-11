@@ -409,10 +409,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       console.warn('LocalStorage quota limit exceeded for events list:', err);
     }
     
-    if (isEventsFirstRender.current) {
-      isEventsFirstRender.current = false;
-      return;
-    }
+    if (!isEventsLoadedFromServer.current) return;
 
     fetch('/api/events', {
       method: 'POST',
@@ -438,10 +435,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
   }, []);
 
   useEffect(() => {
-    if (isGalleryFirstRender.current) {
-      isGalleryFirstRender.current = false;
-      return;
-    }
+    if (!isGalleryLoadedFromServer.current) return;
 
     // Save to server-side JSON API
     fetch('/api/gallery', {
