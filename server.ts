@@ -473,6 +473,7 @@ Respond strictly based on this. Let's do great things together.`;
   // GET gallery items list
   app.get('/api/gallery', (req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       const gallery = getGallery();
       res.json(gallery);
     } catch (err: any) {
@@ -498,6 +499,7 @@ Respond strictly based on this. Let's do great things together.`;
   // GET blogs items list
   app.get('/api/blogs', (req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       const blogs = getBlogs();
       res.json(blogs);
     } catch (err: any) {
@@ -523,6 +525,7 @@ Respond strictly based on this. Let's do great things together.`;
   // GET events items list
   app.get('/api/events', (req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       const events = getEvents();
       res.json(events);
     } catch (err: any) {
@@ -548,6 +551,7 @@ Respond strictly based on this. Let's do great things together.`;
   // GET jobs items list
   app.get('/api/jobs', (req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       const jobs = getJobs();
       res.json(jobs);
     } catch (err: any) {
