@@ -177,18 +177,8 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
   // Carousel Success Stories
   const [activeStory, setActiveStory] = useState(0);
 
-  // Default fallback images for homepage categories
-  const DEFAULT_HOME_GALLERY = [
-    { id: 'photo_1', category: 'agriculture', url: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600', title: 'Solar Drip Irrigation Setup' },
-    { id: 'photo_2', category: 'women', url: 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=600', title: 'Yaraguppi Dairy Cooperative Meeting' },
-    { id: 'photo_3', category: 'education', url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600', title: 'Smart IT Lab Coding Class' },
-    { id: 'photo_4', category: 'health', url: 'https://images.unsplash.com/photo-1504813184591-01552fffd3be?auto=format&fit=crop&q=80&w=600', title: 'Weekly Eye Care Diagnostic Camp' },
-    { id: 'photo_5', category: 'climate', url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600', title: 'Miyawaki Forest Plantation' },
-    { id: 'photo_6', category: 'agriculture', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=600', title: 'Local Cold-Pressed Oil Micro-Unit' }
-  ];
-
-  // Gallery Masonry Images (Dynamic from server + fallback)
-  const [galleryImages, setGalleryImages] = useState<any[]>(DEFAULT_HOME_GALLERY);
+  // Gallery Masonry Images (Dynamic from server)
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
 
   // Fetch gallery list from server on mount
   useEffect(() => {
@@ -218,7 +208,7 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
               title: item.title
             };
           });
-          setGalleryImages([...formatted, ...DEFAULT_HOME_GALLERY]);
+          setGalleryImages(formatted);
         }
       })
       .catch(err => console.warn('Failed to load home gallery from server:', err));

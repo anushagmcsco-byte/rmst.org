@@ -78,78 +78,7 @@ interface PressItem {
 }
 
 // Visual asset dataset optimized for performance & relevance
-const PHOTO_GALLERY: PhotoItem[] = [
-  {
-    id: 'photo_1',
-    category: 'Agriculture',
-    title: 'Solar Drip Irrigation Setup',
-    image: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=800',
-    location: 'Savanur',
-    date: 'June 2026',
-    photographer: 'Mallappa K.',
-    desc: 'High-efficiency solar drip irrigation installations helping small-holder farmers secure stable watering schedules.'
-  },
-  {
-    id: 'photo_2',
-    category: 'Women Empowerment',
-    title: 'Yaraguppi Dairy Cooperative Meeting',
-    image: 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=800',
-    location: 'Yaraguppi',
-    date: 'May 2026',
-    photographer: 'Savitri B.',
-    desc: 'Training women leaders in financial literacy, ledger maintenance, and milk quality diagnostics.'
-  },
-  {
-    id: 'photo_3',
-    category: 'Education & AI Skills',
-    title: 'Smart IT Lab Coding Class',
-    image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=800',
-    location: 'Kundgol',
-    date: 'June 2026',
-    photographer: 'RMST Staff',
-    desc: 'Rural high school students designing web layouts and basic scripts in our solar-powered computers hubs.'
-  },
-  {
-    id: 'photo_4',
-    category: 'Health Camps',
-    title: 'Weekly Eye Care Diagnostic Camp',
-    image: 'https://images.unsplash.com/photo-1504813184591-01552fffd3be?auto=format&fit=crop&q=80&w=800',
-    location: 'Haveri Hub',
-    date: 'April 2026',
-    photographer: 'Dr. Anita G.',
-    desc: 'Free health camps offering specialized ophthalmic checks, prescription spectacles, and surgical linkages.'
-  },
-  {
-    id: 'photo_5',
-    category: 'Environment',
-    title: 'Miyawaki Forest Plantation',
-    image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800',
-    location: 'Gadag',
-    date: 'May 2026',
-    photographer: 'Ramesh H.',
-    desc: 'Developing fast-growing, biodiverse native green covers to recharge deep-aquifers and stabilize topsoil.'
-  },
-  {
-    id: 'photo_6',
-    category: 'Entrepreneurship',
-    title: 'Local Cold-Pressed Oil Micro-Unit',
-    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=800',
-    location: 'Koppal',
-    date: 'June 2026',
-    photographer: 'RMST Staff',
-    desc: 'Supporting rural women in packaging, branding, and distributing pure, chemical-free sunflower and groundnut oil.'
-  },
-  {
-    id: 'photo_7',
-    category: 'Events',
-    title: 'Regenerative Agriculture Expo 2026',
-    image: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80&w=800',
-    location: 'Savanur Ground',
-    date: 'May 2026',
-    photographer: 'RMST Staff',
-    desc: 'A vibrant forum connecting over 340 farming families with agronomists to learn about bio-inoculants.'
-  }
-];
+const PHOTO_GALLERY: PhotoItem[] = [];
 
 const VIDEO_GALLERY: VideoItem[] = [
   {
@@ -325,7 +254,7 @@ const TESTIMONIALS = [
 
 export default function Gallery({ highContrast }: GalleryProps) {
   // Dynamic gallery list from server
-  const [dynamicGallery, setDynamicGallery] = useState<PhotoItem[]>(PHOTO_GALLERY);
+  const [dynamicGallery, setDynamicGallery] = useState<PhotoItem[]>([]);
 
   // Load from server on mount to ensure we are showing up-to-date images across all devices
   useEffect(() => {
@@ -346,7 +275,7 @@ export default function Gallery({ highContrast }: GalleryProps) {
             photographer: item.photographer || 'RMST Staff',
             desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
           }));
-          setDynamicGallery([...formatted, ...PHOTO_GALLERY]);
+          setDynamicGallery(formatted);
         }
       })
       .catch(err => console.warn('Failed to load gallery from server:', err));
