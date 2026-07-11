@@ -17,6 +17,37 @@ const EVENTS_FILE = path.join(process.cwd(), 'events.json');
 const JOBS_FILE = path.join(process.cwd(), 'jobs.json');
 const SEO_FILE = path.join(process.cwd(), 'seo.json');
 
+// ============================================
+// HELPER: Normalize image URLs for Vercel
+// Removes hardcoded localhost references
+// ============================================
+function normalizeImageUrl(url: string): string {
+  if (!url) return url;
+  // Remove any localhost:3000 or localhost references
+  return url.replace(/^https?:\/\/localhost(:\d+)?\//, '/');
+}
+
+// ============================================
+// MIGRATION: Fix existing gallery URLs
+// ============================================
+function migrateGalleryUrls() {
+  try {
+    if (fs.existsSync(GALLERY_FILE)) {
+      const data = fs.readFileSync(GALLERY_FILE, 'utf-8');
+      const gallery = JSON.parse(data);
+      const migrated = gallery.map((item: any) => ({
+        ...item,
+        url: normalizeImageUrl(item.url || ''),
+        image: normalizeImageUrl(item.image || '')
+      }));
+      fs.writeFileSync(GALLERY_FILE, JSON.stringify(migrated, null, 2));
+      console.log('✅ Gallery URLs migrated successfully');
+    }
+  } catch (err) {
+    console.error('Failed to migrate gallery URLs:', err);
+  }
+}
+
 const DEFAULT_GALLERY: any[] = [
   {
     id: "gallery-asset-default-1",
@@ -139,18 +170,27 @@ function getGallery() {
     const data = fs.readFileSync(GALLERY_FILE, 'utf-8');
     const parsed = JSON.parse(data);
     if (Array.isArray(parsed)) {
-      // Self-heal/merge: if the gallery is empty or has fewer than 5 items, merge default items
-      if (parsed.length < 5) {
-        const merged = [...parsed];
+      // Normalize all image URLs
+      const normalized = parsed.map((item: any) => ({
+        ...item,
+        url: normalizeImageUrl(item.url || ''),
+        image: normalizeImageUrl(item.image || '')
+      }));
+      
+      if (normalized.length < 5) {
+        const merged = [...normalized];
         for (const defItem of DEFAULT_GALLERY) {
           if (!merged.some(item => item.id === defItem.id)) {
-            merged.push(defItem);
+            merged.push({
+              ...defItem,
+              url: normalizeImageUrl(defItem.url)
+            });
           }
         }
         fs.writeFileSync(GALLERY_FILE, JSON.stringify(merged, null, 2));
         return merged;
       }
-      return parsed;
+      return normalized;
     }
     return DEFAULT_GALLERY;
   } catch (err) {
@@ -161,7 +201,13 @@ function getGallery() {
 
 function saveGallery(gallery: any[]) {
   try {
-    fs.writeFileSync(GALLERY_FILE, JSON.stringify(gallery, null, 2));
+    // Normalize URLs before saving
+    const normalized = gallery.map((item: any) => ({
+      ...item,
+      url: normalizeImageUrl(item.url || ''),
+      image: normalizeImageUrl(item.image || '')
+    }));
+    fs.writeFileSync(GALLERY_FILE, JSON.stringify(normalized, null, 2));
   } catch (err) {
     console.error('Error writing gallery:', err);
   }
@@ -293,6 +339,11 @@ function saveSeo(seo: any) {
 }
 
 async function startServer() {
+  // ============================================
+  // MIGRATE EXISTING GALLERY URLS ON STARTUP
+  // ============================================
+  migrateGalleryUrls();
+
   const app = express();
   const PORT = Number(process.env.PORT || 3000);
 
@@ -482,6 +533,7 @@ Respond strictly based on this. Let's do great things together.`;
   app.use('/uploads', express.static(uploadsDir));
 
   // POST endpoint for base64 file upload
+  // NOTE: On Vercel, files are ephemeral. For production, use cloud storage like Cloudinary.
   app.post('/api/upload', (req, res) => {
     try {
       const { base64, name } = req.body;
@@ -523,6 +575,7 @@ Respond strictly based on this. Let's do great things together.`;
 
       fs.writeFileSync(filepath, buffer);
       
+      // Use relative path (works on Vercel for the current deployment)
       const fileUrl = `/uploads/${filename}`;
       res.json({ success: true, url: fileUrl });
     } catch (err: any) {
