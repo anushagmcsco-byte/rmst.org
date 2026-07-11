@@ -177,39 +177,8 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
   // Carousel Success Stories
   const [activeStory, setActiveStory] = useState(0);
 
-  // Gallery Masonry Images (Dynamic from localStorage if available)
-  const [galleryImages, setGalleryImages] = useState<any[]>(() => {
-    try {
-      const stored = localStorage.getItem('raita_mitra_gallery_list');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && Array.isArray(parsed)) {
-          return parsed.map((item: any, idx: number) => {
-            const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
-            let category = 'agriculture';
-            if (tag.includes('women') || tag.includes('empowerment')) {
-              category = 'women';
-            } else if (tag.includes('education') || tag.includes('skill') || tag.includes('stem') || tag.includes('ai') || tag.includes('python')) {
-              category = 'education';
-            } else if (tag.includes('climate') || tag.includes('environment') || tag.includes('eco')) {
-              category = 'climate';
-            } else if (tag.includes('health')) {
-              category = 'health';
-            }
-            return {
-              id: item.id || `home_photo_${idx}`,
-              category,
-              url: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600',
-              title: item.title
-            };
-          });
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return [];
-  });
+  // Gallery Masonry Images (Dynamic from server)
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
 
   // Fetch gallery list from server on mount
   useEffect(() => {
@@ -240,11 +209,6 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
             };
           });
           setGalleryImages(formatted);
-          try {
-            localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
-          } catch (err) {
-            console.warn('LocalStorage quota limit exceeded when saving home gallery list:', err);
-          }
         }
       })
       .catch(err => console.warn('Failed to load home gallery from server:', err));

@@ -253,30 +253,8 @@ const TESTIMONIALS = [
 ];
 
 export default function Gallery({ highContrast }: GalleryProps) {
-  // Dynamic gallery list from localStorage
-  const [dynamicGallery, setDynamicGallery] = useState<PhotoItem[]>(() => {
-    try {
-      const stored = localStorage.getItem('raita_mitra_gallery_list');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && Array.isArray(parsed)) {
-          return parsed.map((item: any, idx: number) => ({
-            id: item.id || `dyn_photo_${idx}`,
-            category: item.tags?.[0] || 'Agriculture',
-            title: item.title,
-            image: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
-            location: item.tags?.[1] || 'Haveri',
-            date: item.date || 'June 2026',
-            photographer: item.photographer || 'RMST Staff',
-            desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
-          }));
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return PHOTO_GALLERY;
-  });
+  // Dynamic gallery list from server
+  const [dynamicGallery, setDynamicGallery] = useState<PhotoItem[]>([]);
 
   // Load from server on mount to ensure we are showing up-to-date images across all devices
   useEffect(() => {
@@ -298,14 +276,9 @@ export default function Gallery({ highContrast }: GalleryProps) {
             desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
           }));
           setDynamicGallery(formatted);
-          try {
-            localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
-          } catch (err) {
-            console.warn('LocalStorage quota limit exceeded when saving gallery list:', err);
-          }
         }
       })
-      .catch(err => console.warn('Failed to load gallery from server, showing local/fallback gallery:', err));
+      .catch(err => console.warn('Failed to load gallery from server:', err));
   }, []);
 
   // Navigation & Scroll to top

@@ -347,24 +347,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     return RICH_EVENTS;
   });
 
-  const [galleryList, setGalleryList] = useState<any[]>(() => {
-    const saved = localStorage.getItem('raita_mitra_gallery_list');
-    let initialList: any[] = [];
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          initialList = parsed;
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return initialList.map((item: any, idx: number) => ({
-      id: item.id || `gallery-asset-${idx}-${Date.now()}`,
-      ...item
-    }));
-  });
+  const [galleryList, setGalleryList] = useState<any[]>([]);
 
   // Load blogs list from server on mount
   useEffect(() => {
@@ -451,16 +434,10 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
           setGalleryList(data);
         }
       })
-      .catch(err => console.warn('Failed to load gallery from server, falling back to local storage:', err));
+      .catch(err => console.warn('Failed to load gallery from server:', err));
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(galleryList));
-    } catch (err) {
-      console.warn('LocalStorage quota limit exceeded for gallery list:', err);
-    }
-    
     if (isGalleryFirstRender.current) {
       isGalleryFirstRender.current = false;
       return;
