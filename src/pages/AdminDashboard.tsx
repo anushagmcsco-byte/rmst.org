@@ -373,7 +373,6 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       console.warn('LocalStorage quota limit exceeded for blogs list:', err);
     }
     
-    if (!isBlogsLoadedFromServer.current) return;
     if (isBlogsFirstRender.current) {
       isBlogsFirstRender.current = false;
       return;
@@ -410,7 +409,6 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       console.warn('LocalStorage quota limit exceeded for events list:', err);
     }
     
-    if (!isEventsLoadedFromServer.current) return;
     if (isEventsFirstRender.current) {
       isEventsFirstRender.current = false;
       return;
@@ -440,7 +438,6 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
   }, []);
 
   useEffect(() => {
-    if (!isGalleryLoadedFromServer.current) return;
     if (isGalleryFirstRender.current) {
       isGalleryFirstRender.current = false;
       return;
@@ -588,7 +585,6 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       console.warn('LocalStorage quota limit exceeded for jobs:', err);
     }
     
-    if (!isJobsLoadedFromServer.current) return;
     if (isJobsFirstRender.current) {
       isJobsFirstRender.current = false;
       return;
