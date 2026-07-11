@@ -208,16 +208,7 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
     } catch (e) {
       console.error(e);
     }
-    return [
-      { id: 1, category: 'agriculture', url: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600', title: 'Solar-Powered Drip Irrigation Setup' },
-      { id: 2, category: 'women', url: 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=600', title: 'Yaraguppi Dairy Cooperative Ledger Review' },
-      { id: 3, category: 'education', url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600', title: 'High School Girls Exploring Scratch Coding' },
-      { id: 4, category: 'health', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=600', title: 'Mobile Diagnostic Pediatric Screening' },
-      { id: 5, category: 'climate', url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600', title: 'Watershed Bunding & Sapling Afforestation' },
-      { id: 6, category: 'agriculture', url: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600', title: 'Millet Processing Unit Packaging' },
-      { id: 7, category: 'agriculture', url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=600', title: 'Taluk Agrarian Advisory Assembly' },
-      { id: 8, category: 'agriculture', url: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=600', title: 'Harvesting Diversified Horticulture Crops' }
-    ];
+    return [];
   });
 
   // Fetch gallery list from server on mount

@@ -349,7 +349,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
 
   const [galleryList, setGalleryList] = useState<any[]>(() => {
     const saved = localStorage.getItem('raita_mitra_gallery_list');
-    let initialList = MEDIA_ASSETS_COLLECTION;
+    let initialList: any[] = [];
     if (saved) {
       try {
         const parsed = JSON.parse(saved);

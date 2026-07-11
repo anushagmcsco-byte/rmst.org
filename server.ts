@@ -17,72 +17,7 @@ const EVENTS_FILE = path.join(process.cwd(), 'events.json');
 const JOBS_FILE = path.join(process.cwd(), 'jobs.json');
 const SEO_FILE = path.join(process.cwd(), 'seo.json');
 
-const DEFAULT_GALLERY = [
-  {
-    id: 'photo_1',
-    title: 'Solar-Powered Drip Irrigation Setup',
-    tags: ['Agriculture', 'Hebsur Village, Dharwad'],
-    type: 'Image',
-    size: '2.4 MB',
-    url: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000'
-  },
-  {
-    id: 'photo_2',
-    title: 'Yaraguppi Dairy Cooperative Ledger Review',
-    tags: ['Women Empowerment', 'Yaraguppi, Kundgol'],
-    type: 'Image',
-    size: '1.8 MB',
-    url: 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=1000'
-  },
-  {
-    id: 'photo_3',
-    title: 'High School Girls Exploring Scratch Coding',
-    tags: ['Education & AI Skills', 'Kundgol High School, Dharwad'],
-    type: 'Image',
-    size: '3.1 MB',
-    url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=1000'
-  },
-  {
-    id: 'photo_4',
-    title: 'Mobile Diagnostic Pediatric Screening',
-    tags: ['Health Camps', 'Shiggaon, Haveri'],
-    type: 'Image',
-    size: '4.2 MB',
-    url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=1000'
-  },
-  {
-    id: 'photo_5',
-    title: 'Watershed Bunding & Sapling Afforestation',
-    tags: ['Environment', 'Kalghatgi Taluk, Dharwad'],
-    type: 'Image',
-    size: '2.9 MB',
-    url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=1000'
-  },
-  {
-    id: 'photo_6',
-    title: 'Millet Processing Unit Packaging',
-    tags: ['Entrepreneurship', 'Haveri Rural, Haveri'],
-    type: 'Image',
-    size: '2.2 MB',
-    url: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=1000'
-  },
-  {
-    id: 'photo_7',
-    title: 'Taluk Agrarian Advisory Assembly',
-    tags: ['Events', 'Hubballi Training Centre, Dharwad'],
-    type: 'Image',
-    size: '3.5 MB',
-    url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=1000'
-  },
-  {
-    id: 'photo_8',
-    title: 'Harvesting Diversified Horticulture Crops',
-    tags: ['Agriculture', 'Savanur Taluk, Haveri'],
-    type: 'Image',
-    size: '2.7 MB',
-    url: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=1000'
-  }
-];
+const DEFAULT_GALLERY: any[] = [];
 
 function getGallery() {
   try {
