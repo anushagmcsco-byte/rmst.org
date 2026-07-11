@@ -180,6 +180,119 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
   // Gallery Masonry Images (Dynamic from server)
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
 
+  const STATIC_FALLBACK_GALLERY = [
+    {
+      id: "gallery-asset-default-1",
+      title: "Precision Solar Drip Grid",
+      tags: ["Agriculture", "Dharwad"],
+      type: "Image",
+      size: "1.8 MB",
+      url: "https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000",
+      date: "May 2026",
+      photographer: "Raita Mitra Staff",
+      desc: "Deployment of automated, low-water solar drip irrigation networks in dryland farmer holdings."
+    },
+    {
+      id: "gallery-asset-default-2",
+      title: "Organic Compost Distribution",
+      tags: ["Agriculture", "Haveri"],
+      type: "Image",
+      size: "1.4 MB",
+      url: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80&w=1000",
+      date: "April 2026",
+      photographer: "Raita Mitra Staff",
+      desc: "Distribution of high-nutrient Jeevamrutha and vermicompost batches to rural dryland farming clusters."
+    },
+    {
+      id: "gallery-asset-default-3",
+      title: "Women Cooperative Gathering",
+      tags: ["Women SHGs", "Dharwad"],
+      type: "Image",
+      size: "2.1 MB",
+      url: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=1000",
+      date: "April 2026",
+      photographer: "RMST Media",
+      desc: "Local self-help group leaders organizing monthly credit ledger reconciliations and micro-finance plans."
+    },
+    {
+      id: "gallery-asset-default-4",
+      title: "Dairy Micro-Enterprise Setup",
+      tags: ["Women SHGs", "Yaraguppi"],
+      type: "Image",
+      size: "1.7 MB",
+      url: "https://images.unsplash.com/photo-1605000797439-75a1500dd334?auto=format&fit=crop&q=80&w=1000",
+      date: "June 2026",
+      photographer: "RMST Staff",
+      desc: "Automated cold milk collection center managed entirely by rural women-led cooperatives."
+    },
+    {
+      id: "gallery-asset-default-5",
+      title: "Smart Lab Python Coding Session",
+      tags: ["Skill Labs", "Kundgol"],
+      type: "Image",
+      size: "2.5 MB",
+      url: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&fit=crop&q=80&w=1000",
+      date: "June 2026",
+      photographer: "Tech Mentor Team",
+      desc: "Students at rural high schools exploring digital workflows, basic coding, and introductory AI modules."
+    },
+    {
+      id: "gallery-asset-default-6",
+      title: "STEM Kit Assembly Workshop",
+      tags: ["Skill Labs", "Hubballi"],
+      type: "Image",
+      size: "1.9 MB",
+      url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=1000",
+      date: "May 2026",
+      photographer: "Education Lead",
+      desc: "Hands-on training session for government school science teachers using dynamic STEM kits."
+    },
+    {
+      id: "gallery-asset-default-7",
+      title: "Miyawaki Forest Plantation",
+      tags: ["Eco-Climate", "Gadag"],
+      type: "Image",
+      size: "2.2 MB",
+      url: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=1000",
+      date: "March 2026",
+      photographer: "RMST Green Lead",
+      desc: "Afforestation initiative using high-density native tree configurations to prevent soil erosion."
+    },
+    {
+      id: "gallery-asset-default-8",
+      title: "Groundwater Recharge Tank",
+      tags: ["Eco-Climate", "Belagavi"],
+      type: "Image",
+      size: "1.6 MB",
+      url: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&q=80&w=1000",
+      date: "February 2026",
+      photographer: "Watershed Officer",
+      desc: "Engineering local watershed collection networks and farm ponds to retain dynamic monsoon waters."
+    },
+    {
+      id: "gallery-asset-default-9",
+      title: "Mobile Health Clinic Checkup",
+      tags: ["Health Camps", "Koppal"],
+      type: "Image",
+      size: "2.0 MB",
+      url: "https://images.unsplash.com/photo-1504813184591-01552fffd3be?auto=format&fit=crop&q=80&w=1000",
+      date: "May 2026",
+      photographer: "RMST Clinic Lead",
+      desc: "Mobile diagnostic van screening rural community elders for basic diagnostic care."
+    },
+    {
+      id: "gallery-asset-default-10",
+      title: "Maternal Nutrition Screening",
+      tags: ["Health Camps", "Savanur"],
+      type: "Image",
+      size: "1.5 MB",
+      url: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=1000",
+      date: "April 2026",
+      photographer: "Medical Volunteer",
+      desc: "Tracking anemia levels and distributing maternal organic nutrient meal-kits to mothers."
+    }
+  ];
+
   // Fetch gallery list from server on mount with local storage fallback and self-healing
   useEffect(() => {
     const handleLoadData = (data: any[]) => {
@@ -234,7 +347,8 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
               }
             } catch (e) {}
           }
-          setGalleryImages([]);
+          // Default fallback when server and local storage are both empty/unavailable (e.g. initial load on Vercel mobile)
+          handleLoadData(STATIC_FALLBACK_GALLERY);
         }
       })
       .catch(err => {
@@ -243,11 +357,14 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
-            if (parsed && Array.isArray(parsed)) {
+            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
               handleLoadData(parsed);
+              return;
             }
           } catch (e) {}
         }
+        // Default fallback when server is unreachable and local storage is empty
+        handleLoadData(STATIC_FALLBACK_GALLERY);
       });
   }, []);
 
