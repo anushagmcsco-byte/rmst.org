@@ -186,13 +186,13 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
       const formatted = data.map((item: any, idx: number) => {
         const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
         let category = 'agriculture';
-        if (tag.includes('women') || tag.includes('empowerment')) {
+        if (tag.includes('women') || tag.includes('empowerment') || tag.includes('shg')) {
           category = 'women';
         } else if (tag.includes('education') || tag.includes('skill') || tag.includes('stem') || tag.includes('ai') || tag.includes('python')) {
           category = 'education';
         } else if (tag.includes('climate') || tag.includes('environment') || tag.includes('eco')) {
           category = 'climate';
-        } else if (tag.includes('health')) {
+        } else if (tag.includes('health') || tag.includes('camp') || tag.includes('clinic')) {
           category = 'health';
         }
         return {

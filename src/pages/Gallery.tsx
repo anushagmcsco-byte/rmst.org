@@ -259,16 +259,35 @@ export default function Gallery({ highContrast }: GalleryProps) {
   // Load from server or localStorage fallback on mount to ensure we are showing up-to-date images across all devices
   useEffect(() => {
     const handleLoadData = (data: any[]) => {
-      const formatted = data.map((item: any, idx: number) => ({
-        id: item.id || `dyn_photo_${idx}`,
-        category: item.tags?.[0] || 'Agriculture',
-        title: item.title,
-        image: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
-        location: item.tags?.[1] || 'Haveri',
-        date: item.date || 'June 2026',
-        photographer: item.photographer || 'RMST Staff',
-        desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
-      }));
+      const formatted = data.map((item: any, idx: number) => {
+        const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
+        let category = 'Agriculture';
+        if (tag.includes('women') || tag.includes('empowerment') || tag.includes('shg')) {
+          category = 'Women Empowerment';
+        } else if (tag.includes('education') || tag.includes('skill') || tag.includes('stem') || tag.includes('ai') || tag.includes('python')) {
+          category = 'Education & AI Skills';
+        } else if (tag.includes('climate') || tag.includes('environment') || tag.includes('eco')) {
+          category = 'Environment';
+        } else if (tag.includes('health') || tag.includes('camp') || tag.includes('clinic')) {
+          category = 'Health Camps';
+        } else if (tag.includes('entrepreneur')) {
+          category = 'Entrepreneurship';
+        } else if (tag.includes('event')) {
+          category = 'Events';
+        } else if (tag.includes('agri')) {
+          category = 'Agriculture';
+        }
+        return {
+          id: item.id || `dyn_photo_${idx}`,
+          category,
+          title: item.title,
+          image: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
+          location: item.tags?.[1] || 'Haveri',
+          date: item.date || 'June 2026',
+          photographer: item.photographer || 'RMST Staff',
+          desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
+        };
+      });
       setDynamicGallery(formatted);
       try {
         localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
