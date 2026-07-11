@@ -119,21 +119,62 @@ const SYSTEM_HEALTH_METRICS = {
 // ============================================================================
 
 export default function AdminDashboard({ highContrast, setActivePage, seoConfig, setSeoConfig }: AdminDashboardProps) {
+  const compressImage = (base64Str: string, maxWidth = 800, maxHeight = 600): Promise<string> => {
+    return new Promise((resolve) => {
+      if (!base64Str || !base64Str.startsWith('data:image/')) {
+        resolve(base64Str);
+        return;
+      }
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        } else {
+          resolve(base64Str);
+        }
+      };
+      img.onerror = () => resolve(base64Str);
+    });
+  };
+
   const uploadMediaToServer = async (base64Url: string, name: string): Promise<string> => {
     try {
+      const compressedBase64 = await compressImage(base64Url);
       const res = await fetch('/api/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ base64: base64Url, name })
+        body: JSON.stringify({ base64: compressedBase64, name })
       });
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
-      return data.url || base64Url;
+      // Always return the compressed base64 directly to prevent 404s on ephemeral storage restarts
+      return compressedBase64;
     } catch (err) {
       console.error('Failed to upload file to server, using base64 fallback:', err);
-      return base64Url;
+      try {
+        const compressed = await compressImage(base64Url);
+        return compressed;
+      } catch (e) {
+        return base64Url;
+      }
     }
   };
 
@@ -347,9 +388,20 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     return RICH_EVENTS;
   });
 
-  const [galleryList, setGalleryList] = useState<any[]>([]);
+  const [galleryList, setGalleryList] = useState<any[]>(() => {
+    const saved = localStorage.getItem('raita_mitra_gallery_list');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (e) { console.error(e); }
+    }
+    return []; // Empty by default as requested by user
+  });
 
-  // Load blogs list from server on mount
+  // Load blogs list from server on mount with self-healing
   useEffect(() => {
     fetch('/api/blogs?t=' + Date.now())
       .then(res => {
@@ -358,11 +410,36 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       })
       .then(data => {
         if (Array.isArray(data)) {
-          isBlogsLoadedFromServer.current = true;
-          setBlogsList(data);
+          const localSaved = localStorage.getItem('raita_mitra_blogs_list');
+          let localData: any[] = [];
+          if (localSaved) {
+            try {
+              localData = JSON.parse(localSaved);
+            } catch (e) {}
+          }
+
+          if (data.length > 0) {
+            isBlogsLoadedFromServer.current = true;
+            setBlogsList(data);
+            localStorage.setItem('raita_mitra_blogs_list', JSON.stringify(data));
+          } else if (Array.isArray(localData) && localData.length > 0) {
+            isBlogsLoadedFromServer.current = true;
+            setBlogsList(localData);
+            fetch('/api/blogs', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ blogsList: localData })
+            }).catch(err => console.error('Failed to heal blogs on server:', err));
+          } else {
+            isBlogsLoadedFromServer.current = true;
+            setBlogsList(RICH_ARTICLES);
+          }
         }
       })
-      .catch(err => console.warn('Failed to load blogs from server, falling back to local storage:', err));
+      .catch(err => {
+        console.warn('Failed to load blogs from server, falling back to local storage:', err);
+        isBlogsLoadedFromServer.current = true;
+      });
   }, []);
 
   // Sync blogs list state to local storage & server
@@ -373,10 +450,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       console.warn('LocalStorage quota limit exceeded for blogs list:', err);
     }
     
-    if (isBlogsFirstRender.current) {
-      isBlogsFirstRender.current = false;
-      return;
-    }
+    if (!isBlogsLoadedFromServer.current) return;
 
     fetch('/api/blogs', {
       method: 'POST',
@@ -385,7 +459,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     }).catch(err => console.error('Failed to sync blogs to server:', err));
   }, [blogsList]);
 
-  // Load events list from server on mount
+  // Load events list from server on mount with self-healing
   useEffect(() => {
     fetch('/api/events?t=' + Date.now())
       .then(res => {
@@ -394,11 +468,36 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       })
       .then(data => {
         if (Array.isArray(data)) {
-          isEventsLoadedFromServer.current = true;
-          setEventsList(data);
+          const localSaved = localStorage.getItem('raita_mitra_events_list');
+          let localData: any[] = [];
+          if (localSaved) {
+            try {
+              localData = JSON.parse(localSaved);
+            } catch (e) {}
+          }
+
+          if (data.length > 0) {
+            isEventsLoadedFromServer.current = true;
+            setEventsList(data);
+            localStorage.setItem('raita_mitra_events_list', JSON.stringify(data));
+          } else if (Array.isArray(localData) && localData.length > 0) {
+            isEventsLoadedFromServer.current = true;
+            setEventsList(localData);
+            fetch('/api/events', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ eventsList: localData })
+            }).catch(err => console.error('Failed to heal events on server:', err));
+          } else {
+            isEventsLoadedFromServer.current = true;
+            setEventsList(RICH_EVENTS);
+          }
         }
       })
-      .catch(err => console.warn('Failed to load events from server, falling back to local storage:', err));
+      .catch(err => {
+        console.warn('Failed to load events from server, falling back to local storage:', err);
+        isEventsLoadedFromServer.current = true;
+      });
   }, []);
 
   // Sync events list state to local storage & server
@@ -418,7 +517,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     }).catch(err => console.error('Failed to sync events to server:', err));
   }, [eventsList]);
 
-  // Load gallery list from server on mount
+  // Load gallery list from server on mount with self-healing
   useEffect(() => {
     fetch('/api/gallery?t=' + Date.now())
       .then(res => {
@@ -427,14 +526,46 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
       })
       .then(data => {
         if (Array.isArray(data)) {
-          isGalleryLoadedFromServer.current = true;
-          setGalleryList(data);
+          const localSaved = localStorage.getItem('raita_mitra_gallery_list');
+          let localData: any[] = [];
+          if (localSaved) {
+            try {
+              localData = JSON.parse(localSaved);
+            } catch (e) {}
+          }
+
+          if (data.length > 0) {
+            isGalleryLoadedFromServer.current = true;
+            setGalleryList(data);
+            localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+          } else if (Array.isArray(localData) && localData.length > 0) {
+            isGalleryLoadedFromServer.current = true;
+            setGalleryList(localData);
+            fetch('/api/gallery', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ galleryList: localData })
+            }).catch(err => console.error('Failed to heal gallery on server:', err));
+          } else {
+            isGalleryLoadedFromServer.current = true;
+            setGalleryList([]);
+          }
         }
       })
-      .catch(err => console.warn('Failed to load gallery from server:', err));
+      .catch(err => {
+        console.warn('Failed to load gallery from server, falling back to local storage:', err);
+        isGalleryLoadedFromServer.current = true;
+      });
   }, []);
 
+  // Sync gallery list state to local storage & server
   useEffect(() => {
+    try {
+      localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(galleryList));
+    } catch (err) {
+      console.warn('LocalStorage quota limit exceeded for gallery list:', err);
+    }
+
     if (!isGalleryLoadedFromServer.current) return;
 
     // Save to server-side JSON API

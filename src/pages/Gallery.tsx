@@ -256,29 +256,66 @@ export default function Gallery({ highContrast }: GalleryProps) {
   // Dynamic gallery list from server
   const [dynamicGallery, setDynamicGallery] = useState<PhotoItem[]>([]);
 
-  // Load from server on mount to ensure we are showing up-to-date images across all devices
+  // Load from server or localStorage fallback on mount to ensure we are showing up-to-date images across all devices
   useEffect(() => {
+    const handleLoadData = (data: any[]) => {
+      const formatted = data.map((item: any, idx: number) => ({
+        id: item.id || `dyn_photo_${idx}`,
+        category: item.tags?.[0] || 'Agriculture',
+        title: item.title,
+        image: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
+        location: item.tags?.[1] || 'Haveri',
+        date: item.date || 'June 2026',
+        photographer: item.photographer || 'RMST Staff',
+        desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
+      }));
+      setDynamicGallery(formatted);
+      try {
+        localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+      } catch (e) {}
+    };
+
     fetch('/api/gallery?t=' + Date.now())
       .then(res => {
         if (!res.ok) throw new Error('API response not ok');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data)) {
-          const formatted = data.map((item: any, idx: number) => ({
-            id: item.id || `dyn_photo_${idx}`,
-            category: item.tags?.[0] || 'Agriculture',
-            title: item.title,
-            image: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
-            location: item.tags?.[1] || 'Haveri',
-            date: item.date || 'June 2026',
-            photographer: item.photographer || 'RMST Staff',
-            desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
-          }));
-          setDynamicGallery(formatted);
+        if (Array.isArray(data) && data.length > 0) {
+          handleLoadData(data);
+        } else {
+          // If server is empty, fallback to local storage
+          const saved = localStorage.getItem('raita_mitra_gallery_list');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                handleLoadData(parsed);
+                // Heal server
+                fetch('/api/gallery', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ galleryList: parsed })
+                }).catch(err => console.error('Failed to sync/heal gallery to server from Gallery page:', err));
+                return;
+              }
+            } catch (e) {}
+          }
+          setDynamicGallery([]);
         }
       })
-      .catch(err => console.warn('Failed to load gallery from server:', err));
+      .catch(err => {
+        console.warn('Failed to load gallery from server, fallback to local storage:', err);
+        const saved = localStorage.getItem('raita_mitra_gallery_list');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed && Array.isArray(parsed)) {
+              handleLoadData(parsed);
+            }
+          } catch (e) {}
+        }
+      });
   }, []);
 
   // Navigation & Scroll to top

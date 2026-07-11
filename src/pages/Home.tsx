@@ -180,38 +180,75 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
   // Gallery Masonry Images (Dynamic from server)
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
 
-  // Fetch gallery list from server on mount
+  // Fetch gallery list from server on mount with local storage fallback and self-healing
   useEffect(() => {
+    const handleLoadData = (data: any[]) => {
+      const formatted = data.map((item: any, idx: number) => {
+        const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
+        let category = 'agriculture';
+        if (tag.includes('women') || tag.includes('empowerment')) {
+          category = 'women';
+        } else if (tag.includes('education') || tag.includes('skill') || tag.includes('stem') || tag.includes('ai') || tag.includes('python')) {
+          category = 'education';
+        } else if (tag.includes('climate') || tag.includes('environment') || tag.includes('eco')) {
+          category = 'climate';
+        } else if (tag.includes('health')) {
+          category = 'health';
+        }
+        return {
+          id: item.id || `home_photo_${idx}`,
+          category,
+          url: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600',
+          title: item.title
+        };
+      });
+      setGalleryImages(formatted);
+      try {
+        localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+      } catch (e) {}
+    };
+
     fetch('/api/gallery?t=' + Date.now())
       .then(res => {
         if (!res.ok) throw new Error('API response not ok');
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data)) {
-          const formatted = data.map((item: any, idx: number) => {
-            const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
-            let category = 'agriculture';
-            if (tag.includes('women') || tag.includes('empowerment')) {
-              category = 'women';
-            } else if (tag.includes('education') || tag.includes('skill') || tag.includes('stem') || tag.includes('ai') || tag.includes('python')) {
-              category = 'education';
-            } else if (tag.includes('climate') || tag.includes('environment') || tag.includes('eco')) {
-              category = 'climate';
-            } else if (tag.includes('health')) {
-              category = 'health';
-            }
-            return {
-              id: item.id || `home_photo_${idx}`,
-              category,
-              url: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600',
-              title: item.title
-            };
-          });
-          setGalleryImages(formatted);
+        if (Array.isArray(data) && data.length > 0) {
+          handleLoadData(data);
+        } else {
+          // Fallback to local storage if server is empty
+          const saved = localStorage.getItem('raita_mitra_gallery_list');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                handleLoadData(parsed);
+                // Heal server
+                fetch('/api/gallery', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ galleryList: parsed })
+                }).catch(err => console.error('Failed to sync/heal gallery to server from Home page:', err));
+                return;
+              }
+            } catch (e) {}
+          }
+          setGalleryImages([]);
         }
       })
-      .catch(err => console.warn('Failed to load home gallery from server:', err));
+      .catch(err => {
+        console.warn('Failed to load home gallery from server, fallback to local storage:', err);
+        const saved = localStorage.getItem('raita_mitra_gallery_list');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed && Array.isArray(parsed)) {
+              handleLoadData(parsed);
+            }
+          } catch (e) {}
+        }
+      });
   }, []);
 
   const filteredGallery = activeGalleryTab === 'all' 
