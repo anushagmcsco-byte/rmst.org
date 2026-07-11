@@ -413,6 +413,63 @@ Respond strictly based on this. Let's do great things together.`;
     }
   });
 
+  // Serve uploads folder statically
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  app.use('/uploads', express.static(uploadsDir));
+
+  // POST endpoint for base64 file upload
+  app.post('/api/upload', (req, res) => {
+    try {
+      const { base64, name } = req.body;
+      if (!base64 || typeof base64 !== 'string') {
+        res.status(400).json({ error: 'base64 data is required' });
+        return;
+      }
+
+      // Check if it's a data URL
+      const matches = base64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      let buffer: Buffer;
+      let extension = 'png'; // default
+
+      if (matches && matches.length === 3) {
+        const mimeType = matches[1];
+        buffer = Buffer.from(matches[2], 'base64');
+        const extMatch = mimeType.split('/');
+        if (extMatch && extMatch[1]) {
+          extension = extMatch[1];
+        }
+      } else {
+        // Fallback to raw base64 if not data URL
+        buffer = Buffer.from(base64, 'base64');
+      }
+
+      // Safe clean file name extension
+      if (name) {
+        const dotIndex = name.lastIndexOf('.');
+        if (dotIndex !== -1) {
+          const fileExt = name.substring(dotIndex + 1).toLowerCase();
+          if (fileExt && /^[a-z0-9]{2,5}$/.test(fileExt)) {
+            extension = fileExt;
+          }
+        }
+      }
+
+      const filename = `upload_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${extension}`;
+      const filepath = path.join(uploadsDir, filename);
+
+      fs.writeFileSync(filepath, buffer);
+      
+      const fileUrl = `/uploads/${filename}`;
+      res.json({ success: true, url: fileUrl });
+    } catch (err: any) {
+      console.error('Failed to handle upload:', err);
+      res.status(500).json({ error: 'Failed to upload media', details: err.message });
+    }
+  });
+
   // GET gallery items list
   app.get('/api/gallery', (req, res) => {
     try {

@@ -119,6 +119,24 @@ const SYSTEM_HEALTH_METRICS = {
 // ============================================================================
 
 export default function AdminDashboard({ highContrast, setActivePage, seoConfig, setSeoConfig }: AdminDashboardProps) {
+  const uploadMediaToServer = async (base64Url: string, name: string): Promise<string> => {
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ base64: base64Url, name })
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      return data.url || base64Url;
+    } catch (err) {
+      console.error('Failed to upload file to server, using base64 fallback:', err);
+      return base64Url;
+    }
+  };
+
   const isFirstRender = useRef(true);
   const isGalleryLoadedFromServer = useRef(false);
   const isGalleryFirstRender = useRef(true);
@@ -1755,10 +1773,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingBlog) {
-                                            setNewBlogForm(prev => ({ ...prev, image: base64Url, imageName: file.name }));
+                                            setNewBlogForm(prev => ({ ...prev, image: '', imageName: 'Uploading...' }));
                                           } else {
-                                            setEditingBlog(prev => prev ? ({ ...prev, image: base64Url, imageName: file.name }) : null);
+                                            setEditingBlog(prev => prev ? ({ ...prev, image: '', imageName: 'Uploading...' }) : null);
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingBlog) {
+                                              setNewBlogForm(prev => ({ ...prev, image: url, imageName: file.name }));
+                                            } else {
+                                              setEditingBlog(prev => prev ? ({ ...prev, image: url, imageName: file.name }) : null);
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -1784,10 +1809,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingBlog) {
-                                            setNewBlogForm(prev => ({ ...prev, video: base64Url, videoName: file.name }));
+                                            setNewBlogForm(prev => ({ ...prev, video: '', videoName: 'Uploading...' }));
                                           } else {
-                                            setEditingBlog(prev => prev ? ({ ...prev, video: base64Url, videoName: file.name }) : null);
+                                            setEditingBlog(prev => prev ? ({ ...prev, video: '', videoName: 'Uploading...' }) : null);
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingBlog) {
+                                              setNewBlogForm(prev => ({ ...prev, video: url, videoName: file.name }));
+                                            } else {
+                                              setEditingBlog(prev => prev ? ({ ...prev, video: url, videoName: file.name }) : null);
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -2249,10 +2281,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingEvent) {
-                                            setNewEventForm({ ...newEventForm, image: base64Url, imageName: file.name });
+                                            setNewEventForm(prev => ({ ...prev, image: '', imageName: 'Uploading...' }));
                                           } else {
-                                            setEditingEvent({ ...editingEvent, image: base64Url, imageName: file.name });
+                                            setEditingEvent(prev => prev ? ({ ...prev, image: '', imageName: 'Uploading...' }) : null);
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingEvent) {
+                                              setNewEventForm(prev => ({ ...prev, image: url, imageName: file.name }));
+                                            } else {
+                                              setEditingEvent(prev => prev ? ({ ...prev, image: url, imageName: file.name }) : null);
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -2278,10 +2317,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingEvent) {
-                                            setNewEventForm({ ...newEventForm, video: base64Url, videoName: file.name });
+                                            setNewEventForm(prev => ({ ...prev, video: '', videoName: 'Uploading...' }));
                                           } else {
-                                            setEditingEvent({ ...editingEvent, video: base64Url, videoName: file.name });
+                                            setEditingEvent(prev => prev ? ({ ...prev, video: '', videoName: 'Uploading...' }) : null);
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingEvent) {
+                                              setNewEventForm(prev => ({ ...prev, video: url, videoName: file.name }));
+                                            } else {
+                                              setEditingEvent(prev => prev ? ({ ...prev, video: url, videoName: file.name }) : null);
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -2592,10 +2638,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingGallery) {
-                                            setNewGalleryForm(prev => ({ ...prev, url: base64Url, imageName: file.name, type: 'Image' }));
+                                            setNewGalleryForm(prev => ({ ...prev, url: '', imageName: 'Uploading...', type: 'Image' }));
                                           } else {
-                                            setEditingGallery(prev => prev ? ({ ...prev, url: base64Url, imageName: file.name, type: 'Image' }) : null);
+                                            setEditingGallery(prev => prev ? ({ ...prev, url: '', imageName: 'Uploading...', type: 'Image' }) : null);
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingGallery) {
+                                              setNewGalleryForm(prev => ({ ...prev, url, imageName: file.name, type: 'Image' }));
+                                            } else {
+                                              setEditingGallery(prev => prev ? ({ ...prev, url, imageName: file.name, type: 'Image' }) : null);
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -2621,10 +2674,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingGallery) {
-                                            setNewGalleryForm(prev => ({ ...prev, url: base64Url, videoName: file.name, type: 'Video' }));
+                                            setNewGalleryForm(prev => ({ ...prev, url: '', videoName: 'Uploading...', type: 'Video' }));
                                           } else {
-                                            setEditingGallery(prev => prev ? ({ ...prev, url: base64Url, videoName: file.name, type: 'Video' }) : null);
+                                            setEditingGallery(prev => prev ? ({ ...prev, url: '', videoName: 'Uploading...', type: 'Video' }) : null);
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingGallery) {
+                                              setNewGalleryForm(prev => ({ ...prev, url, videoName: file.name, type: 'Video' }));
+                                            } else {
+                                              setEditingGallery(prev => prev ? ({ ...prev, url, videoName: file.name, type: 'Video' }) : null);
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
