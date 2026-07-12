@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   // These will be filled in by the platform environment
@@ -13,3 +14,4 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const storage = getStorage(app);

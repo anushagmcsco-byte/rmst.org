@@ -11,8 +11,9 @@ import {
   AlertCircle, Grid, Layers, Terminal, Compass, LayoutGrid, Award, BookOpen, ThumbsUp, MoreVertical,
   Link, Zap
 } from 'lucide-react';
-import { db } from '../lib/firebase';
+import { db, storage } from '../lib/firebase';
 import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   BarChart, Bar, Cell, PieChart, Pie, Legend, LineChart, Line, RadialBarChart, RadialBar
@@ -160,23 +161,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
   const uploadMediaToServer = async (base64Url: string, name: string): Promise<string> => {
     try {
       const compressedBase64 = await compressImage(base64Url);
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ base64: compressedBase64, name })
-      });
-      // Always return the compressed base64 directly to prevent 404s on ephemeral storage restarts
-      return compressedBase64;
+      const response = await fetch(compressedBase64);
+      const blob = await response.blob();
+      const storageRef = ref(storage, `gallery/${Date.now()}_${name}`);
+      const snapshot = await uploadBytes(storageRef, blob);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
     } catch (err) {
-      console.error('Failed to upload file to server, using base64 fallback:', err);
-      try {
-        const compressed = await compressImage(base64Url);
-        return compressed;
-      } catch (e) {
-        return base64Url;
-      }
+      console.error('Failed to upload file to Firebase Storage:', err);
+      // Fallback
+      return base64Url;
     }
   };
 
