@@ -165,8 +165,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
         },
         body: JSON.stringify({ base64: compressedBase64, name })
       });
-      // Always return the compressed base64 directly to prevent 404s on ephemeral storage restarts
-      return compressedBase64;
+      const data = await res.json();
+      if (data.success && data.url) {
+        return data.url;
+      }
+      throw new Error('Upload failed or no URL returned');
     } catch (err) {
       console.error('Failed to upload file to server, using base64 fallback:', err);
       try {
