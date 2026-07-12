@@ -161,15 +161,30 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
   const uploadMediaToServer = async (base64Url: string, name: string): Promise<string> => {
     try {
       const compressedBase64 = await compressImage(base64Url);
-      const response = await fetch(compressedBase64);
-      const blob = await response.blob();
+      
+      // Convert base64 to blob without fetch
+      const contentType = compressedBase64.split(',')[0].split(':')[1].split(';')[0];
+      const b64Data = compressedBase64.split(',')[1];
+      const byteCharacters = atob(b64Data);
+      const byteArrays = [];
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+      const blob = new Blob(byteArrays, { type: contentType });
+      
       const storageRef = ref(storage, `gallery/${Date.now()}_${name}`);
       const snapshot = await uploadBytes(storageRef, blob);
       const downloadURL = await getDownloadURL(snapshot.ref);
       return downloadURL;
     } catch (err) {
       console.error('Failed to upload file to Firebase Storage:', err);
-      // Fallback
+      // Fallback - this is likely to fail if it's too big, but it's the current fallback
       return base64Url;
     }
   };

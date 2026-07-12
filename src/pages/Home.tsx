@@ -597,11 +597,15 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
           <div className="lg:col-span-5 relative h-[380px] md:h-[450px]" id="about-image-collage">
             {/* Primary Background Card */}
             <div className="absolute top-0 left-0 w-3/4 h-3/4 rounded-3xl overflow-hidden shadow-xl transform -rotate-3 hover:rotate-0 transition-transform duration-500 border border-slate-100">
-              <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">No Image</div>
+              <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">
+                <img src="home_1.jpg" alt="Impact" className="w-full h-full object-cover" />
+              </div>
             </div>
             {/* Secondary Foreground Card */}
             <div className="absolute bottom-0 right-0 w-2/3 h-2/3 rounded-3xl overflow-hidden shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500 border-4 border-white dark:border-slate-900">
-              <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">No Image</div>
+              <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">
+                <img src="home_2.jpg" alt="Impact" className="w-full h-full object-cover" />
+              </div>
             </div>
             {/* Small Focal Overlay Card */}
             <div className={`absolute top-1/3 right-1/4 p-4 rounded-2xl shadow-lg border hidden sm:block max-w-[180px] ${
