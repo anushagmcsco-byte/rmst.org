@@ -1,0 +1,500 @@
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-6 bg-slate-50 border rounded-2xl space-y-4 text-left"
+                      >
+                        <h4 className="text-xs font-bold font-mono text-slate-500 uppercase">Gemini Generated Output Draft:</h4>
+                        <div className="text-xs font-sans leading-relaxed text-slate-700 whitespace-pre-wrap font-medium">
+                          {generatedOutput}
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedOutput);
+                            alert('Copied to system clipboard!');
+                          }}
+                          className="px-3.5 py-1.5 bg-white hover:bg-slate-100 border rounded-lg text-[10px] font-mono text-slate-600 font-bold"
+                        >
+                          Copy Output
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                </div>
+              )}
+
+              {/* TAB: FORM SUBMISSIONS & GOOGLE SHEETS SYNC */}
+              {currentAdminTab === 'submissions' && (
+                <div className="space-y-6 animate-fade-in">
+                  
+                  {/* Google Sheets Sync Settings card */}
+                  <div className="p-6 bg-white border border-slate-200 rounded-3xl text-left space-y-6">
+                    <div className="pb-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-wider block">CLOUD DATA PIPELINE</span>
+                        <h3 className="text-lg font-extrabold font-display text-slate-900">Google Sheets Integration Panel</h3>
+                        <p className="text-xs text-slate-400">Configure your Google Sheets Web App endpoint proxy to synchronize form submissions instantly.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full ${sheetsConfig.webAppUrl ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                        <span className="text-xs font-mono font-bold text-slate-600">
+                          {sheetsConfig.webAppUrl ? 'Pipeline: ACTIVE' : 'Pipeline: INACTIVE'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleSaveSheetsConfig} className="space-y-4">
+                      <div className="space-y-2">
+                        <label htmlFor="sheets-url-input" className="block text-[11px] font-mono font-bold text-slate-500 uppercase">
+                          Google Apps Script Web App Deployment URL *
+                        </label>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <input
+                            id="sheets-url-input"
+                            type="url"
+                            placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                            value={sheetsConfig.webAppUrl}
+                            onChange={(e) => setSheetsConfig({ webAppUrl: e.target.value })}
+                            className="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-emerald-500 text-slate-850"
+                          />
+                          <button
+                            type="submit"
+                            disabled={isConfigSaving}
+                            className="px-6 py-3 bg-slate-950 hover:bg-slate-800 disabled:bg-slate-300 text-white font-mono text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                          >
+                            {isConfigSaving ? 'Saving...' : '💾 Save Webhook URL'}
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-normal">
+                          Create a spreadsheet, go to <strong>Extensions &gt; Apps Script</strong>, paste the Google Apps Script Web App handler code, click <strong>Deploy &gt; New Deployment</strong> as Web App, set access to "Anyone", and paste the resulting URL here.
+                        </p>
+                      </div>
+                    </form>
+
+                    {/* Quick Connectivity Testing Tools */}
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-xs font-mono font-bold uppercase text-slate-600">Integration Handshake Tester</h4>
+                        <button
+                          onClick={handleTestSync}
+                          disabled={testSyncLoading}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 text-white rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer"
+                        >
+                          {testSyncLoading ? 'Running Handshake...' : '⚡ Trigger Test Sync Submission'}
+                        </button>
+                      </div>
+                      
+                      {testSyncResult && (
+                        <div className="p-3 bg-white border rounded-xl text-[11px] font-mono whitespace-pre-wrap leading-relaxed">
+                          {testSyncResult}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Submissions data table card */}
+                  <div className="p-6 bg-white border border-slate-200 rounded-3xl text-left space-y-6">
+                    <div className="pb-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-wider block">LOCAL PERSISTENT STORAGE</span>
+                        <h3 className="text-lg font-extrabold font-display text-slate-900">Form Submissions Ledger</h3>
+                        <p className="text-xs text-slate-400">View and audit all verified form submissions recorded locally in the file storage engine (submissions.json).</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={fetchSubmissionsAndConfig}
+                          disabled={isSubmissionsLoading}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-mono font-bold rounded-lg transition-colors cursor-pointer"
+                        >
+                          {isSubmissionsLoading ? 'Syncing...' : '🔄 Refresh Lists'}
+                        </button>
+                        <button
+                          onClick={handleClearSubmissions}
+                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-mono font-bold rounded-lg transition-colors cursor-pointer"
+                        >
+                          🗑️ Clear local logs
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Submissions Filters */}
+                    <div className="flex flex-wrap gap-2">
+                      {['All', 'Contact Inquiry', 'Support Ticket', 'Newsletter Signup', 'Career Application', 'Volunteer Hours Log', 'Partner Onboarding'].map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setSubmissionsFilter(filter)}
+                          className={`px-3 py-1.5 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                            submissionsFilter === filter
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Submissions List Render */}
+                    {isSubmissionsLoading ? (
+                      <div className="py-12 text-center text-xs font-mono text-slate-400 animate-pulse">
+                        Querying localhost storage files...
+                      </div>
+                    ) : submissionsList.length === 0 ? (
+                      <div className="py-12 text-center text-xs font-mono text-slate-400 border border-dashed rounded-2xl">
+                        No submissions recorded on this environment yet. Try submitting the contact or career forms to see them populate here in real-time.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {submissionsList
+                          .filter(sub => submissionsFilter === 'All' || sub.formType === submissionsFilter)
+                          .map((sub, index) => (
+                            <div key={index} className="p-5 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-mono font-bold rounded">
+                                    {sub.formType}
+                                  </span>
+                                  <h4 className="text-xs font-black text-slate-800">{sub.subject || 'Form Inquiry'}</h4>
+                                </div>
+                                <span className="text-[10px] font-mono text-slate-400">
+                                  {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : 'Just Now'}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                                <div>
+                                  <p className="text-[10px] font-mono text-slate-400 uppercase">Sender Name</p>
+                                  <p className="font-semibold text-slate-800">{sub.name}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-mono text-slate-400 uppercase">Email Address</p>
+                                  <p className="font-semibold text-slate-800">{sub.email}</p>
+                                </div>
+                                {sub.phone && (
+                                  <div>
+                                    <p className="text-[10px] font-mono text-slate-400 uppercase">Phone Number</p>
+                                    <p className="font-semibold text-slate-800">{sub.phone}</p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {sub.message && (
+                                <div className="p-3.5 bg-white border rounded-xl text-xs text-slate-600 leading-relaxed font-sans font-medium whitespace-pre-wrap">
+                                  {sub.message}
+                                </div>
+                              )}
+
+                              {sub.metadata && Object.keys(sub.metadata).length > 0 && (
+                                <div className="space-y-1">
+                                  <p className="text-[9px] font-mono text-slate-400 uppercase">Extended Metadata Payload</p>
+                                  <div className="p-3 bg-slate-900 text-slate-300 text-[10px] font-mono rounded-xl overflow-x-auto">
+                                    <pre>{JSON.stringify(sub.metadata, null, 2)}</pre>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Google Sheets Sync Status Panel */}
+                              <div className="pt-2 border-t border-slate-200/60 flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-mono text-slate-400 uppercase">GOOGLE SHEETS PIPELINE:</span>
+                                  {sub.googleSheetsSynced ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                      Synchronized Successfully
+                                    </span>
+                                  ) : sub.syncError ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                      Sync Failed (Action Required)
+                                    </span>
+                                  ) : sheetsConfig.webAppUrl ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                      Configured (Unsynced or Retrying)
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                      Not Connected
+                                    </span>
+                                  )}
+                                </div>
+                                {sub.syncError && (
+                                  <div className="p-3.5 bg-rose-50/50 border border-rose-100 rounded-xl text-xs text-rose-800 space-y-2">
+                                    <p className="font-bold flex items-center gap-1">
+                                      ⚠️ Sync Error Details:
+                                    </p>
+                                    <p className="font-medium font-sans leading-relaxed text-[11px] whitespace-pre-line bg-white/60 p-2.5 rounded-lg border border-rose-200/40">{sub.syncError}</p>
+                                    
+                                    {(sub.syncError.includes('Google Permission Error') || sub.syncError.includes('Google Apps Script Permission Error') || sub.syncError.includes('401') || sub.syncError.includes('403')) ? (
+                                      <div className="pt-1.5 text-[10px] text-rose-700/90 font-sans space-y-1.5 bg-white/80 p-3 rounded-lg border border-rose-200/60">
+                                        <p className="font-bold uppercase tracking-wide">💡 Step-by-Step Fix for this Apps Script Permission Issue:</p>
+                                        <ol className="list-decimal pl-4 space-y-1 font-medium leading-relaxed">
+                                          <li>Open the <strong>Google Sheet</strong> where you want to store submissions.</li>
+                                          <li>Click <strong>Extensions &gt; Apps Script</strong> in the main toolbar.</li>
+                                          <li>In the upper right corner, click the blue <strong>Deploy</strong> button and choose <strong>Manage deployments</strong>.</li>
+                                          <li>Click the pencil icon (<strong>Edit</strong>) for your active Web App deployment.</li>
+                                          <li>Change <strong>"Who has access"</strong> from <em>"Only myself"</em> to <strong>"Anyone"</strong>. (This allows our secure background proxy to forward submission data).</li>
+                                          <li>Under <strong>"Project version"</strong>, select <strong>"New version"</strong> (Google will NOT apply permission changes without creating a new version!).</li>
+                                          <li>Click <strong>Deploy</strong>.</li>
+                                          <li>Copy the new <strong>Web App URL</strong> (ends with <code>/exec</code>).</li>
+                                          <li>Paste that URL into the <strong>Google Sheets Sync Web App URL</strong> field above and click <strong>Save</strong>.</li>
+                                        </ol>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {/* Google Apps Script Integration Snippet Instructions */}
+                    <div className="pt-6 border-t border-slate-100 space-y-4">
+                      <h4 className="text-xs font-mono font-bold uppercase text-slate-500">Google Apps Script Snippet (Deploy as Web App)</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        To build a direct pipeline to your spreadsheet, copy this Apps Script, paste it into your sheet's App Script editor, click <strong>Deploy &gt; New Deployment (Web App)</strong>, and configure access as <strong>"Anyone"</strong>:
+                      </p>
+                      
+                      <div className="p-4 bg-slate-950 text-slate-200 text-xs font-mono rounded-2xl overflow-x-auto border border-slate-800 max-h-60">
+                        <pre>{`function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
+    
+    // Auto-create header if sheet is empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["Timestamp", "Form Type", "Name", "Email", "Phone", "Subject", "Message", "Metadata JSON"]);
+    }
+    
+    sheet.appendRow([
+      new Date(),
+      data.formType || "",
+      data.name || "",
+      data.email || "",
+      data.phone || "",
+      data.subject || "",
+      data.message || "",
+      data.metadata ? JSON.stringify(data.metadata) : ""
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({ success: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`}</pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 8: INTEGRATIONS HUB */}
+              {currentAdminTab === 'integrations' && (
+                <div className="p-6 bg-white border border-slate-200 rounded-3xl text-left space-y-6 animate-fade-in">
+                  <div className="pb-4 border-b">
+                    <h3 className="text-base font-extrabold font-display text-slate-900">Integrations Hub & Key Ring</h3>
+                    <p className="text-xs text-slate-400">Manage client certificates and secret key rings for domestic UPI and foreign exchange channels.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {INTEGRATIONS_HUB_ITEMS.map(int => (
+                      <div key={int.id} className="p-5 bg-slate-50 border rounded-2xl space-y-3 flex flex-col justify-between">
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-mono text-slate-400 font-bold">{int.category}</span>
+                            <span className={`px-2 py-0.5 rounded text-[8px] font-mono font-bold uppercase ${
+                              int.status === 'Connected' ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'
+                            }`}>{int.status}</span>
+                          </div>
+                          <h4 className="text-xs font-black text-slate-800">{int.name}</h4>
+                          <p className="text-[11px] text-slate-500 leading-normal">{int.desc}</p>
+                        </div>
+
+                        <div className="pt-2 border-t text-[9px] font-mono text-slate-400 flex justify-between">
+                          <span>Key Expiry: {int.keyExpiry}</span>
+                          <button 
+                            onClick={() => alert(`Initiating key rotation handshake for: ${int.name}`)}
+                            className="text-amber-700 font-bold hover:underline"
+                          >
+                            Rotate Secret
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB 9: SUPER ADMIN CONTROL PANEL */}
+              {currentAdminTab === 'system' && (
+                <div className="p-6 bg-white border border-slate-200 rounded-3xl text-left space-y-6 animate-fade-in">
+                  <div className="pb-4 border-b">
+                    <h3 className="text-base font-extrabold font-display text-slate-900">Super-Admin Configuration Panel</h3>
+                    <p className="text-xs text-slate-400">Toggle system flags, view master database backups, and control environment variables.</p>
+                  </div>
+
+                  {/* Feature Flags */}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-mono font-bold uppercase text-slate-400">Ecosystem Feature Flags</h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                      {[
+                        { key: 'enableMultiTenant', label: 'Multi-Tenant SaaS Architecture' },
+                        { key: 'enableMCPServer', label: 'Model Context Protocol (MCP) Server Access' },
+                        { key: 'enableBlockchainLedger', label: 'Solidity Hash Trust Ledger Proofs' },
+                        { key: 'enableRealTimeGPSMap', label: 'Live GPS Satellite Grounding Map' },
+                        { key: 'maintenanceMode', label: 'Ecosystem Under Maintenance Flag' }
+                      ].map(item => {
+                        const val = featureFlags[item.key as keyof typeof featureFlags];
+                        return (
+                          <div key={item.key} className="p-4 bg-slate-50 border rounded-2xl flex justify-between items-center">
+                            <span>{item.label}</span>
+                            <button
+                              onClick={() => toggleFeatureFlag(item.key as any)}
+                              className="text-slate-600"
+                            >
+                              {val ? (
+                                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">Enabled</span>
+                              ) : (
+                                <span className="px-2 py-1 bg-slate-200 text-slate-600 text-[10px] font-bold rounded">Disabled</span>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Environment variables simulation */}
+                  <div className="pt-6 border-t border-slate-100 space-y-4">
+                    <h4 className="text-xs font-mono font-bold uppercase text-slate-400">Environment Variables Config (.env)</h4>
+                    
+                    <div className="space-y-2 text-xs font-mono bg-slate-950 text-slate-300 p-4 rounded-2xl border border-slate-800">
+                      <div>
+                        <span className="text-emerald-500">DATABASE_URL</span>=
+                        <span className="text-slate-400">postgresql://postgres:********@db.supa.internal:5432/raita-mitra</span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-500">GEMINI_API_KEY</span>=
+                        <span className="text-slate-400">AIzaSyB_********************_MOCK_KEY</span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-500">REDIS_CACHE_SERVER</span>=
+                        <span className="text-slate-400">redis://default:********@redis-cache.internal:6379</span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-500">MCA_DARPAN_ACCESS_SECRET</span>=
+                        <span className="text-slate-400">mca_sha256_****************_v4</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* System Health Audit log snippet */}
+                  <div className="pt-6 border-t border-slate-100 space-y-4">
+                    <h4 className="text-xs font-mono font-bold uppercase text-slate-400">Super-Admin Audit Trail Ledger</h4>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-[11px] font-mono text-slate-600">
+                        <thead>
+                          <tr className="border-b uppercase text-[9px] font-bold text-slate-400">
+                            <th className="py-2 px-2 text-left">Timestamp</th>
+                            <th className="py-2 px-2 text-left">Operator Node</th>
+                            <th className="py-2 px-2 text-left">Action Payload</th>
+                            <th className="py-2 px-2 text-right">IP Address</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {AUDIT_LOGS.map((log, i) => (
+                            <tr key={i}>
+                              <td className="py-3 px-2 text-slate-400">{log.time}</td>
+                              <td className="py-3 px-2 font-bold text-slate-800">{log.user}</td>
+                              <td className="py-3 px-2">
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase mr-1.5 ${
+                                  log.severity === 'danger' ? 'bg-rose-50 text-rose-700' : log.severity === 'warning' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                  {log.severity}
+                                </span>
+                                <span>{log.action}</span>
+                              </td>
+                              <td className="py-3 px-2 text-right text-slate-400">{log.ip}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+            </div>
+
+          </div>
+
+        </main>
+      )}
+
+      {/* CUSTOM SYSTEM-WIDE CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {confirmDialog && confirmDialog.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmDialog(null)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            
+            {/* Dialog Card */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className={`relative w-full max-w-md p-6 rounded-3xl border shadow-2xl z-10 text-left space-y-4 ${
+                highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200 text-slate-800'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-rose-50 text-rose-600 shrink-0">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold font-display">
+                    {confirmDialog.title || 'Confirm Action'}
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed font-sans">
+                    {confirmDialog.message}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2 font-mono">
+                <button
+                  onClick={() => setConfirmDialog(null)}
+                  className="px-4 py-2 border rounded-xl hover:bg-slate-50 text-slate-600 text-xs font-bold cursor-pointer transition-colors"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={() => {
+                    confirmDialog.onConfirm();
+                    setConfirmDialog(null);
+                  }}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors"
+                >
+                  CONFIRM EXECUTION
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
