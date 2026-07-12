@@ -30,12 +30,11 @@ import {
   FileText,
   Clock
 } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { programsData } from '../data/programs';
 import { impactStories, testimonials } from '../data/stories';
 import KarnatakaImpactMap from '../components/KarnatakaImpactMap';
-import home1 from '../../home_1.jpg';
-import home2 from '../../home_2.jpg';
-import homePartnerWithUs from '../../home_partner_with_us.jpg';
 // Import the new image for success stories
 import shrnappaGouda from '../../home_shrnappa_gouda.jpg';
 
@@ -295,9 +294,16 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
 
   // Fetch gallery list from server on mount with local storage fallback and self-healing
   useEffect(() => {
-    const handleLoadData = (data: any[]) => {
+    const q = query(collection(db, 'gallery'), orderBy('timestamp', 'desc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const data = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
       const formatted = data.map((item: any, idx: number) => {
-        const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
+        const tags = item.tags || [];
+        const tag = (tags[0] || 'Agriculture').toLowerCase();
         let category = 'agriculture';
         if (tag.includes('women') || tag.includes('empowerment') || tag.includes('shg')) {
           category = 'women';
@@ -316,56 +322,11 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
         };
       });
       setGalleryImages(formatted);
-      try {
-        localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
-      } catch (e) {}
-    };
+    }, (err) => {
+      console.error('Error fetching home gallery from Firestore:', err);
+    });
 
-    fetch('/api/gallery?t=' + Date.now())
-      .then(res => {
-        if (!res.ok) throw new Error('API response not ok');
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          handleLoadData(data);
-        } else {
-          // Fallback to local storage if server is empty
-          const saved = localStorage.getItem('raita_mitra_gallery_list');
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-                handleLoadData(parsed);
-                // Heal server
-                fetch('/api/gallery', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ galleryList: parsed })
-                }).catch(err => console.error('Failed to sync/heal gallery to server from Home page:', err));
-                return;
-              }
-            } catch (e) {}
-          }
-          // Default fallback when server and local storage are both empty/unavailable (e.g. initial load on Vercel mobile)
-          handleLoadData(STATIC_FALLBACK_GALLERY);
-        }
-      })
-      .catch(err => {
-        console.warn('Failed to load home gallery from server, fallback to local storage:', err);
-        const saved = localStorage.getItem('raita_mitra_gallery_list');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-              handleLoadData(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
-        // Default fallback when server is unreachable and local storage is empty
-        handleLoadData(STATIC_FALLBACK_GALLERY);
-      });
+    return () => unsubscribe();
   }, []);
 
   const filteredGallery = activeGalleryTab === 'all' 
@@ -636,21 +597,11 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
           <div className="lg:col-span-5 relative h-[380px] md:h-[450px]" id="about-image-collage">
             {/* Primary Background Card */}
             <div className="absolute top-0 left-0 w-3/4 h-3/4 rounded-3xl overflow-hidden shadow-xl transform -rotate-3 hover:rotate-0 transition-transform duration-500 border border-slate-100">
-              <img 
-                src={home1} 
-                alt="Agriculture land karnataka" 
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
+              <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">No Image</div>
             </div>
             {/* Secondary Foreground Card */}
             <div className="absolute bottom-0 right-0 w-2/3 h-2/3 rounded-3xl overflow-hidden shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500 border-4 border-white dark:border-slate-900">
-              <img 
-                src={home2} 
-                alt="Women processing crops" 
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
+              <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">No Image</div>
             </div>
             {/* Small Focal Overlay Card */}
             <div className={`absolute top-1/3 right-1/4 p-4 rounded-2xl shadow-lg border hidden sm:block max-w-[180px] ${
@@ -907,12 +858,7 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
         
         {/* Background Image with Deep Contrast Overlay */}
         <div className="absolute inset-0 z-0 opacity-25">
-          <img 
-            src={homePartnerWithUs} 
-            alt="Corporate NGO collaboration" 
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
+          <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">No Image</div>
         </div>
         <div className="absolute inset-0 bg-gradient-to-r from-forest-dark via-forest-dark/95 to-transparent z-0"></div>
 

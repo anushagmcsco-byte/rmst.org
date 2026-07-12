@@ -11,6 +11,8 @@ import {
   AlertCircle, Grid, Layers, Terminal, Compass, LayoutGrid, Award, BookOpen, ThumbsUp, MoreVertical,
   Link, Zap
 } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   BarChart, Bar, Cell, PieChart, Pie, Legend, LineChart, Line, RadialBarChart, RadialBar
@@ -388,18 +390,16 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     return RICH_EVENTS;
   });
 
-  const [galleryList, setGalleryList] = useState<any[]>(() => {
-    const saved = localStorage.getItem('raita_mitra_gallery_list');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed)) {
-          return parsed;
-        }
-      } catch (e) { console.error(e); }
-    }
-    return []; // Empty by default as requested by user
-  });
+  const [galleryList, setGalleryList] = useState<any[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'gallery'), orderBy('timestamp', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setGalleryList(items);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Load blogs list from server on mount with self-healing
   useEffect(() => {
@@ -1046,100 +1046,53 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                 </span>
                 <h3 className="text-2xl font-display font-black leading-tight text-white">Trust Administration Gateway</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Authenticate with authorized credentials to verify statutory compliance, manipulate website draft pages, segment donor engagements, and supervise AI content synthesis pipelines.
+                  Authenticate with authorized credentials to verify statutory compliance.
                 </p>
               </div>
 
               <p className="text-[9px] font-mono text-slate-500 relative z-10 pt-4 border-t border-slate-800">
-                ⚠️ Secure auditing protocols active. All login iterations are timestamped and logged on pgvector database master ledgers.
+                ⚠️ Secure auditing protocols active.
               </p>
             </div>
 
             <div className="p-8 md:p-12 flex flex-col justify-center text-left space-y-6 bg-white">
               <div className="space-y-1">
                 <h4 className="text-lg font-bold text-slate-900 font-display">Credential Verification</h4>
-                <p className="text-xs text-slate-400">Single Sign-On or Mobile OTP authorized for trust operators.</p>
+                <p className="text-xs text-slate-400">Please login to access the admin dashboard.</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-xl text-xs font-mono">
-                {(['google', 'microsoft', 'email'] as const).map(m => (
-                  <button
-                    key={m}
-                    onClick={() => { setAuthMethod(m); setOtpSent(false); }}
-                    className={`py-2 rounded-lg text-center font-bold capitalize cursor-pointer transition-all ${
-                      authMethod === m ? 'bg-slate-900 text-white shadow' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    {m === 'google' ? 'Google SSO' : m === 'microsoft' ? 'Microsoft' : 'Email OTP'}
-                  </button>
-                ))}
-              </div>
-
-              <form onSubmit={otpSent ? handleAdminVerifyOtp : handleAdminRequestOtp} className="space-y-4">
-                {authMethod === 'email' ? (
-                  <div>
-                    <label htmlFor="adm-email-input" className="block text-[10px] font-mono font-bold text-slate-400 uppercase mb-1">SuperUser Email</label>
-                    <input
-                      id="adm-email-input"
-                      type="email"
-                      required
-                      placeholder="anusha.gmcsco@gmail.com"
-                      value={authInput}
-                      onChange={(e) => setAuthInput(e.target.value)}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-1 focus:ring-slate-900 focus:outline-none text-xs font-mono text-slate-800"
-                    />
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-150 space-y-3">
-                    <p className="text-xs text-slate-500 leading-relaxed font-sans">
-                      Federated security is configured. Click the button below to simulate credential handshake via {authMethod.toUpperCase()} SSO.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setIsAdminLoggedIn(true)}
-                      className="w-full py-2 bg-slate-900 text-white font-mono font-bold text-xs rounded-xl"
-                    >
-                      Bypass & Handshake via {authMethod.toUpperCase()}
-                    </button>
-                  </div>
-                )}
-
-                {otpSent && (
-                  <div>
-                    <label htmlFor="adm-otp-input" className="block text-[10px] font-mono font-bold text-slate-400 uppercase mb-1">Verification OTP</label>
-                    <input
-                      id="adm-otp-input"
-                      type="text"
-                      required
-                      maxLength={6}
-                      placeholder="123456"
-                      value={otpInput}
-                      onChange={(e) => setOtpInput(e.target.value)}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-xl text-center text-lg font-mono tracking-widest font-bold"
-                    />
-                  </div>
-                )}
-
-                {authMethod === 'email' && (
-                  <button
-                    type="submit"
-                    className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl text-xs font-mono uppercase tracking-wider"
-                  >
-                    {otpSent ? 'Verify Code' : 'Dispatched Administrative Key'}
-                  </button>
-                )}
-              </form>
-
-              <div className="pt-2 border-t border-slate-100">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                setIsAdminLoggedIn(true);
+              }} className="space-y-4">
+                <div>
+                  <label htmlFor="adm-username" className="block text-[10px] font-mono font-bold text-slate-400 uppercase mb-1">Username</label>
+                  <input
+                    id="adm-username"
+                    type="text"
+                    required
+                    placeholder="admin"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-1 focus:ring-slate-900 focus:outline-none text-xs font-mono text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="adm-password" className="block text-[10px] font-mono font-bold text-slate-400 uppercase mb-1">Password</label>
+                  <input
+                    id="adm-password"
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-1 focus:ring-slate-900 focus:outline-none text-xs font-mono text-slate-800"
+                  />
+                </div>
                 <button
-                  onClick={() => setIsAdminLoggedIn(true)}
-                  className="w-full text-center text-[11px] font-mono text-amber-600 hover:underline font-black cursor-pointer"
+                  type="submit"
+                  className="w-full py-2 bg-slate-900 text-white font-mono font-bold text-xs rounded-xl hover:bg-slate-800 transition-colors"
                 >
-                  ⚡ Force Entry: Access SuperAdmin Dashboard Instantly
+                  Log In
                 </button>
-              </div>
+              </form>
             </div>
-
           </div>
         </section>
       ) : (
@@ -1149,12 +1102,18 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
           {/* USER WELCOME CARD */}
           <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-250 pb-6">
             <div className="flex items-center gap-4 text-left">
-              <img 
-                src={adminUser.avatar} 
-                alt={adminUser.name} 
-                className="w-14 h-14 rounded-full object-cover border-2 border-amber-500 shadow-sm"
-                referrerPolicy="referrer"
-              />
+              {adminUser.avatar ? (
+                <img 
+                  src={adminUser.avatar} 
+                  alt={adminUser.name} 
+                  className="w-14 h-14 rounded-full object-cover border-2 border-amber-500 shadow-sm"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500">
+                  {adminUser.name.charAt(0)}
+                </div>
+              )}
               <div className="space-y-0.5">
                 <h2 className="text-xl font-display font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <span>Welcome Back, {adminUser.name}</span>
@@ -1709,7 +1668,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       {MEDIA_ASSETS_COLLECTION.map((asset, index) => (
                         <div key={index} className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all">
-                          <img src={asset.url} alt={asset.title} className="w-full h-36 object-cover" />
+                            {asset.url ? (
+                              <img src={asset.url} alt={asset.title} className="w-full h-36 object-cover" />
+                            ) : (
+                              <div className="w-full h-36 bg-slate-100 flex items-center justify-center text-xs text-slate-400">No Image</div>
+                            )}
                           <div className="p-3 text-left space-y-1">
                             <h5 className="text-[11px] font-bold truncate text-slate-800">{asset.title}</h5>
                             <div className="flex justify-between items-center text-[9px] text-slate-400 font-mono">
@@ -2879,14 +2842,18 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                             </div>
                           </div>
                           <div className="border border-slate-200 rounded-xl bg-white p-3 flex items-center gap-3">
-                            <img 
-                              src={isCreatingGallery ? newGalleryForm.url : editingGallery.url} 
-                              alt="Asset Preview" 
-                              className="w-16 h-16 rounded object-cover border border-slate-100 bg-slate-50 shrink-0"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=150';
-                              }}
-                            />
+                            {(isCreatingGallery ? newGalleryForm.url : editingGallery.url) ? (
+                              <img 
+                                src={isCreatingGallery ? newGalleryForm.url : editingGallery.url} 
+                                alt="Asset Preview" 
+                                className="w-16 h-16 rounded object-cover border border-slate-100 bg-slate-50 shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=150';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded flex items-center justify-center border border-slate-100 bg-slate-50 text-[10px] text-slate-400">No Image</div>
+                            )}
                             <div className="text-left">
                               <div className="font-extrabold text-slate-700 uppercase text-[9px] tracking-wider">Dynamic Preview</div>
                               <div className="text-[10px] text-slate-400 font-mono max-w-[200px] truncate">
@@ -2908,22 +2875,38 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                           CANCEL
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (isCreatingGallery) {
                               const newAsset = {
-                                id: `gallery-asset-${Date.now()}`,
                                 title: newGalleryForm.title || 'Untitled Asset',
                                 tags: [newGalleryForm.tag1, newGalleryForm.tag2],
                                 type: newGalleryForm.type,
                                 size: newGalleryForm.size,
-                                url: newGalleryForm.url
+                                url: newGalleryForm.url,
+                                timestamp: serverTimestamp()
                               };
-                              setGalleryList(prev => [newAsset, ...prev]);
-                              setIsCreatingGallery(false);
+                              try {
+                                await addDoc(collection(db, 'gallery'), newAsset);
+                                setIsCreatingGallery(false);
+                              } catch (error) {
+                                console.error("Error adding document: ", error);
+                                alert("Failed to add document. Please check the console for details.");
+                              }
                             } else {
-                              const updated = galleryList.map((g) => g.id === editingGallery.id ? editingGallery : g);
-                              setGalleryList(updated);
-                              setEditingGallery(null);
+                              try {
+                                const assetRef = doc(db, 'gallery', editingGallery.id);
+                                await updateDoc(assetRef, {
+                                  title: editingGallery.title,
+                                  tags: editingGallery.tags,
+                                  type: editingGallery.type,
+                                  size: editingGallery.size,
+                                  url: editingGallery.url
+                                });
+                                setEditingGallery(null);
+                              } catch (error) {
+                                console.error("Error updating document: ", error);
+                                alert("Failed to update document. Please check the console for details.");
+                              }
                             }
                           }}
                           className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold cursor-pointer"
@@ -2938,7 +2921,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                       {galleryList.map((asset) => (
                         <div key={asset.id} className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm flex flex-col justify-between group relative animate-fade-in">
                           <div>
-                            <img src={asset.url} alt={asset.title} className="w-full h-40 object-cover" />
+                            {asset.url ? (
+                              <img src={asset.url} alt={asset.title} className="w-full h-40 object-cover" />
+                            ) : (
+                              <div className="w-full h-40 bg-slate-100 flex items-center justify-center text-xs text-slate-400">No Image</div>
+                            )}
                             <div className="p-4 space-y-1.5 text-left">
                               <h5 className="text-xs font-black text-slate-800 leading-tight">{asset.title}</h5>
                               <div className="flex flex-wrap gap-1">
@@ -2967,8 +2954,8 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                   triggerConfirm(
                                     'Delete Gallery Asset',
                                     `Are you sure you want to delete the asset: "${asset.title}"? This will immediately remove it from the live gallery page.`,
-                                    () => {
-                                      setGalleryList(prev => prev.filter((g) => g.id !== asset.id));
+                                    async () => {
+                                      await deleteDoc(doc(db, 'gallery', asset.id));
                                     }
                                   );
                                 }}
@@ -3173,7 +3160,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                               </div>
 
                               <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                              {details.futureImage ? (
                                 <img src={details.futureImage} alt="Future Image Preview" className="w-12 h-12 object-cover rounded-lg border bg-slate-100" referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg border bg-slate-100 flex items-center justify-center text-[8px] text-slate-400">No Image</div>
+                              )}
                                 <div className="text-left font-mono">
                                   <div className="text-[9px] font-bold text-slate-500">IMAGE PREVIEW</div>
                                   <div className="text-[8px] text-slate-400 truncate max-w-[200px]">{details.futureImage}</div>

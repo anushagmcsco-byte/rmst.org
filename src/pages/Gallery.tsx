@@ -1,33 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Image as ImageIcon, 
   Video as VideoIcon, 
   Newspaper, 
-  Download, 
   ChevronRight, 
-  ChevronLeft, 
-  X, 
-  Eye, 
-  Play, 
-  Calendar, 
   MapPin, 
-  ExternalLink, 
-  Share2, 
-  Heart, 
-  MessageCircle, 
-  Bookmark, 
-  Check, 
-  ArrowRight, 
-  Award, 
-  FileDown, 
-  Volume2, 
-  ShieldCheck, 
-  TrendingUp, 
-  Users, 
-  Search,
-  Maximize2
+  Maximize2,
+  Play,
+  ArrowRight,
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  ExternalLink,
+  Download,
+  Award,
+  X
 } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 interface GalleryProps {
   highContrast: boolean;
@@ -369,11 +361,15 @@ export default function Gallery({ highContrast }: GalleryProps) {
   // Dynamic gallery list from server
   const [dynamicGallery, setDynamicGallery] = useState<PhotoItem[]>([]);
 
-  // Load from server or localStorage fallback on mount to ensure we are showing up-to-date images across all devices
+  // Load from Firestore
   useEffect(() => {
-    const handleLoadData = (data: any[]) => {
-      const formatted = data.map((item: any, idx: number) => {
-        const tag = (item.tags?.[0] || 'Agriculture').toLowerCase();
+    const q = query(collection(db, 'gallery'), orderBy('timestamp', 'desc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const items = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        const tags = data.tags || [];
+        const tag = (tags[0] || 'Agriculture').toLowerCase();
+        
         let category = 'Agriculture';
         if (tag.includes('women') || tag.includes('empowerment') || tag.includes('shg')) {
           category = 'Women Empowerment';
@@ -390,68 +386,23 @@ export default function Gallery({ highContrast }: GalleryProps) {
         } else if (tag.includes('agri')) {
           category = 'Agriculture';
         }
+        
         return {
-          id: item.id || `dyn_photo_${idx}`,
+          id: doc.id,
           category,
-          title: item.title,
-          image: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
-          location: item.tags?.[1] || 'Haveri',
-          date: item.date || 'June 2026',
-          photographer: item.photographer || 'RMST Staff',
-          desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
+          title: data.title || 'Untitled',
+          image: data.url || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
+          location: tags[1] || 'Haveri',
+          date: data.date || 'June 2026',
+          photographer: data.photographer || 'RMST Staff',
+          desc: data.desc || 'Visual documentation of our ongoing rural outreach programs.'
         };
       });
-      setDynamicGallery(formatted);
-      try {
-        localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
-      } catch (e) {}
-    };
-
-    fetch('/api/gallery?t=' + Date.now())
-      .then(res => {
-        if (!res.ok) throw new Error('API response not ok');
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          handleLoadData(data);
-        } else {
-          // If server is empty, fallback to local storage
-          const saved = localStorage.getItem('raita_mitra_gallery_list');
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-                handleLoadData(parsed);
-                // Heal server
-                fetch('/api/gallery', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ galleryList: parsed })
-                }).catch(err => console.error('Failed to sync/heal gallery to server from Gallery page:', err));
-                return;
-              }
-            } catch (e) {}
-          }
-          // Default fallback when server and local storage are both empty/unavailable (e.g. initial load on Vercel mobile)
-          handleLoadData(STATIC_FALLBACK_GALLERY);
-        }
-      })
-      .catch(err => {
-        console.warn('Failed to load gallery from server, fallback to local storage:', err);
-        const saved = localStorage.getItem('raita_mitra_gallery_list');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-              handleLoadData(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
-        // Default fallback when server is unreachable and local storage is empty
-        handleLoadData(STATIC_FALLBACK_GALLERY);
-      });
+      setDynamicGallery(items);
+    }, (err) => {
+      console.error('Error fetching gallery from Firestore:', err);
+    });
+    return () => unsubscribe();
   }, []);
 
   // Navigation & Scroll to top
@@ -592,12 +543,16 @@ export default function Gallery({ highContrast }: GalleryProps) {
               }`}
             >
               <div className="relative h-48 overflow-hidden">
-                <img 
-                  src={card.image} 
-                  alt={card.title} 
-                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
-                  referrerPolicy="no-referrer"
-                />
+                {card.image ? (
+                  <img 
+                    src={card.image} 
+                    alt={card.title} 
+                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">No Image</div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent"></div>
                 <span className="absolute top-4 right-4 bg-slate-900/95 text-gold font-mono text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border border-gold/25">
                   {card.badge}
@@ -707,12 +662,16 @@ export default function Gallery({ highContrast }: GalleryProps) {
                   }`}
                 >
                   <div className="relative overflow-hidden bg-slate-100 aspect-[4/3]">
-                    <img 
-                      src={photo.image} 
-                      alt={photo.title} 
-                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-102"
-                      referrerPolicy="no-referrer"
-                    />
+                    {photo.image ? (
+                      <img 
+                        src={photo.image} 
+                        alt={photo.title} 
+                        className="w-full h-full object-cover transition-all duration-500 group-hover:scale-102"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">No Image</div>
+                    )}
                     <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <div className="p-3 rounded-full bg-white text-emerald-950 shadow-md">
                         <Maximize2 size={16} />
@@ -770,12 +729,16 @@ export default function Gallery({ highContrast }: GalleryProps) {
                 }`}
               >
                 <div className="relative aspect-video overflow-hidden bg-slate-950">
-                  <img 
-                    src={video.thumbnail} 
-                    alt={video.title} 
-                    className="w-full h-full object-cover transition-all duration-500 group-hover:scale-102 group-hover:opacity-85"
-                    referrerPolicy="no-referrer"
-                  />
+                  {video.thumbnail ? (
+                    <img 
+                      src={video.thumbnail} 
+                      alt={video.title} 
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-102 group-hover:opacity-85"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">No Image</div>
+                  )}
                   <div className="absolute inset-0 bg-slate-950/20"></div>
                   
                   {/* Glowing Video Button overlay */}
@@ -803,377 +766,6 @@ export default function Gallery({ highContrast }: GalleryProps) {
                     <span>Documentary Short</span>
                     <span>{video.views}</span>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 9. SOCIAL MEDIA SECTION (INSTAGRAM STYLE FEED) */}
-      <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-white border-t border-b border-slate-200/40'}`} id="social-media-feed">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center space-y-3 mb-12">
-            <span className="text-xs font-mono uppercase tracking-widest text-gold font-bold">COMMUNITY CHANNELS</span>
-            <h2 className={`text-2xl md:text-4xl font-display font-extrabold tracking-tight ${highContrast ? 'text-white' : 'text-slate-950'}`}>
-              Follow Our Journey
-            </h2>
-            <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto font-sans leading-relaxed">
-              Interact with our live mockup feed mirroring current posts, user testimonials, and project dispatches from community streams.
-            </p>
-          </div>
-
-          {/* Social Platform Toggle */}
-          <div className="flex justify-center gap-2 mb-10">
-            {['Instagram', 'LinkedIn', 'Facebook', 'YouTube'].map((platform) => (
-              <button
-                key={platform}
-                onClick={() => setActiveSocialTab(platform as any)}
-                className={`px-4 py-2 text-xs font-bold rounded-full border cursor-pointer transition-colors ${
-                  activeSocialTab === platform
-                    ? highContrast ? 'bg-white text-black border-black font-extrabold' : 'bg-emerald-900 text-white border-emerald-950'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/70 shadow-sm'
-                }`}
-              >
-                {platform}
-              </button>
-            ))}
-          </div>
-
-          <div className="max-w-lg mx-auto">
-            <AnimatePresence mode="wait">
-              {activeSocialTab === 'Instagram' && (
-                <motion.div
-                  key="instagram-post"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  className={`rounded-2xl border text-left overflow-hidden ${
-                    highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/60 shadow-lg'
-                  }`}
-                >
-                  {/* Inst Head */}
-                  <div className="p-4 flex items-center justify-between border-b border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-500 via-red-500 to-purple-600 p-0.5">
-                        <img 
-                          src="https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=facearea&facepad=2&w=150&h=150&q=80" 
-                          alt="Raita Mitra" 
-                          className="w-full h-full object-cover rounded-full border border-white"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
-                      <div>
-                        <strong className="text-xs font-bold text-slate-800 dark:text-white leading-none block">raitamitra_trust</strong>
-                        <span className="text-[9px] text-slate-400 font-mono">Hubballi, Dharwad</span>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-emerald-600 hover:underline cursor-pointer">Follow</span>
-                  </div>
-
-                  {/* Inst Image */}
-                  <div className="relative aspect-square overflow-hidden bg-slate-100">
-                    <img 
-                      src="https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=600" 
-                      alt="Farmer harvest success" 
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-
-                  {/* Actions Bar */}
-                  <div className="p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <div className="flex gap-4 text-slate-600 dark:text-white">
-                        <Heart size={20} className="hover:text-red-500 cursor-pointer transition-colors" />
-                        <MessageCircle size={20} className="hover:text-emerald-500 cursor-pointer transition-colors" />
-                        <Share2 size={20} className="hover:text-gold cursor-pointer transition-colors" />
-                      </div>
-                      <Bookmark size={20} className="hover:text-slate-800 dark:hover:text-gold cursor-pointer transition-colors" />
-                    </div>
-
-                    <div className="space-y-1 font-sans text-xs">
-                      <p className="font-bold text-slate-800 dark:text-white">842 Likes</p>
-                      <p className="leading-relaxed">
-                        <strong className="font-bold text-slate-800 dark:text-white mr-1.5">raitamitra_trust</strong>
-                        Proud moment at our Savanur training unit! Over 40 marginal farmers harvested their first batch of high-yield organic chilis. Consistent earnings ahead! 🌶️🌱
-                      </p>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-mono pt-1">
-                        2 Days Ago • #RegenerativeAgri #RaitaMitra
-                      </p>
-                    </div>
-
-                    {/* Inst Comments */}
-                    <div className="pt-3 border-t border-slate-100 text-[11px] space-y-1">
-                      <p><strong className="font-bold mr-1">anusha.gm</strong> Amazing on-ground work! Keep it up team! 🙌</p>
-                      <p><strong className="font-bold mr-1">tatatech_esg</strong> Standard models executed with precision.</p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeSocialTab === 'LinkedIn' && (
-                <motion.div
-                  key="linkedin-post"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  className={`rounded-2xl border text-left overflow-hidden ${
-                    highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/60 shadow-lg'
-                  }`}
-                >
-                  <div className="p-4 flex gap-3 items-center border-b border-slate-100">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 border shrink-0">
-                      <img 
-                        src="https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=150" 
-                        alt="RMST Logo" 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                    <div>
-                      <strong className="text-xs font-bold text-slate-800 dark:text-white leading-none block">Raita Mitra Social Trust (R)</strong>
-                      <span className="text-[9px] text-slate-400 font-mono block mt-0.5">34,120 Followers • 1w</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-3 font-sans text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
-                    <p>
-                      We are thrilled to present our Audited Annual Narrative and CSR Progress Statements for Fiscal Year 2025-26. Raita Mitra remains committed to bringing 100% execution transparency for our corporate partners.
-                    </p>
-                    <p>
-                      Special thanks to the ESG boards at Tata Technologies, SELCO, and our institutional volunteers for enabling sustainable irrigation and high school IT lab campaigns in Dharwad district.
-                    </p>
-                    
-                    <div className="border border-slate-100 rounded-xl overflow-hidden">
-                      <img 
-                        src="https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=600" 
-                        alt="SHG Women Dairy" 
-                        className="w-full h-44 object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="p-3 bg-slate-50 border-t border-slate-100">
-                        <h4 className="font-bold text-slate-800">CSR Partnership Brochure & Compliance Kit 2026</h4>
-                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">Verified NGO Darpan: KA/2023/0342549</p>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-2 text-[10px] font-bold text-slate-400 font-mono border-t border-slate-100">
-                      <span>142 Likes • 18 Comments</span>
-                      <span>12 Shares</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeSocialTab === 'Facebook' && (
-                <motion.div
-                  key="facebook-post"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  className={`rounded-2xl border text-left overflow-hidden ${
-                    highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/60 shadow-lg'
-                  }`}
-                >
-                  <div className="p-4 flex gap-3 items-center border-b border-slate-100">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 border shrink-0">
-                      <img 
-                        src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=150" 
-                        alt="RMST FB" 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                    <div>
-                      <strong className="text-xs font-bold text-slate-800 dark:text-white leading-none block">Raita Mitra Social Trust</strong>
-                      <span className="text-[9px] text-slate-400 font-mono block mt-0.5">June 18 • Public Group</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-3 font-sans text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
-                    <p>
-                      Our STEM Coding camps are sparking curiosity! 💻✨ Watch our rural high schoolers inside the solar IT Hubs construct their first interactive screens. Education is the greatest catalyst for rural youth development.
-                    </p>
-                    <img 
-                      src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600" 
-                      alt="Coding class" 
-                      className="w-full h-44 object-cover rounded-xl"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono">
-                      <span>👍 You, Basavaraj and 212 others</span>
-                      <span>44 shares</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeSocialTab === 'YouTube' && (
-                <motion.div
-                  key="youtube-post"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  className={`rounded-2xl border text-left overflow-hidden ${
-                    highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/60 shadow-lg'
-                  }`}
-                >
-                  <div className="relative aspect-video bg-slate-900">
-                    <img 
-                      src="https://images.unsplash.com/photo-1504813184591-01552fffd3be?auto=format&fit=crop&q=80&w=600" 
-                      alt="YouTube Channel" 
-                      className="w-full h-full object-cover opacity-80"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-14 h-10 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center rounded-xl cursor-pointer shadow-lg">
-                        <Play size={24} fill="currentColor" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-5 space-y-2 text-xs font-sans">
-                    <strong className="text-slate-800 dark:text-white font-display block text-sm leading-tight">
-                      Raita Mitra Trust: Transforming Rainfed Agrarian Taluks in Karnataka
-                    </strong>
-                    <p className="text-slate-500">
-                      Our official YouTube channel showcases continuous field-recorded testimonials, live program setups, and volunteer training dispatches.
-                    </p>
-                    <div className="pt-2 flex justify-between items-center border-t border-slate-100 text-[10px] font-mono text-slate-400">
-                      <span>Raita Mitra TV</span>
-                      <span>12.4K Subscribers</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </section>
-
-      {/* 10. MEDIA & PRESS COVERAGE (MAGAZINE CARDS) */}
-      <section className="py-20 max-w-7xl mx-auto px-4" id="press-coverage-sec">
-        <div className="text-center space-y-3 mb-12">
-          <span className="text-xs font-mono uppercase tracking-widest text-gold font-bold">PRESS ARCHIVES</span>
-          <h2 className={`text-2xl md:text-4xl font-display font-extrabold tracking-tight ${highContrast ? 'text-white' : 'text-slate-950'}`}>
-            Media & Press Coverage
-          </h2>
-          <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto font-sans leading-relaxed">
-            Review column mentions, newspaper coverages, and official press releases from leading state and national journals.
-          </p>
-        </div>
-
-        {/* Press Categories Toggle */}
-        <div className="flex flex-wrap justify-center gap-2 mb-10">
-          {pressCategories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActivePressTab(cat)}
-              className={`px-4 py-2 text-xs font-bold rounded-full border cursor-pointer transition-colors ${
-                activePressTab === cat
-                  ? highContrast ? 'bg-white text-black border-black font-extrabold' : 'bg-emerald-900 text-white border-emerald-950 shadow-sm'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/70 shadow-sm'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {filteredPress.map((press) => (
-            <div 
-              key={press.id}
-              className={`p-6 rounded-3xl border text-left flex flex-col md:flex-row gap-6 items-start transition-all hover:shadow-sm ${
-                highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/50 shadow-sm'
-              }`}
-            >
-              <div className="w-full md:w-44 h-32 overflow-hidden rounded-2xl shrink-0 bg-slate-100">
-                <img 
-                  src={press.image} 
-                  alt={press.title} 
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-              <div className="space-y-2 flex-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-mono font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase">
-                    {press.source}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">{press.date}</span>
-                </div>
-                <h3 className="text-sm font-extrabold font-display leading-tight text-slate-800 dark:text-white">
-                  {press.title}
-                </h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-300 font-sans leading-relaxed">
-                  {press.snippet}
-                </p>
-                <div className="pt-1">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer">
-                    Read Newspaper Column
-                    <ExternalLink size={10} />
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 11. DOWNLOAD MEDIA KIT SECTION (PREMIUM RESOURCES) */}
-      <section className={`py-20 ${highContrast ? 'bg-black border-t-2 border-b-2 border-white' : 'bg-slate-100 border-t border-b border-slate-200/40'}`} id="media-kit-sec">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center space-y-3 mb-12">
-            <span className="text-xs font-mono uppercase tracking-widest text-gold font-bold">REPRESENTATIVE RESOURCES</span>
-            <h2 className={`text-2xl md:text-4xl font-display font-extrabold tracking-tight ${highContrast ? 'text-white' : 'text-slate-950'}`}>
-              Media Resource Centre
-            </h2>
-            <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto font-sans leading-relaxed">
-              Verify and download board-approved logos, compliance booklets, high-res layouts, and organizational brand guidelines.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MEDIA_RESOURCES.map((resource, i) => (
-              <div 
-                key={i}
-                className={`p-6 rounded-3xl border text-left flex flex-col justify-between h-44 ${
-                  highContrast ? 'bg-black border-2 border-white text-white' : 'bg-white border-slate-200/50 shadow-sm'
-                }`}
-              >
-                <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="inline-flex items-center gap-1 text-[8px] font-mono font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase">
-                      {resource.type}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">{resource.size}</span>
-                  </div>
-                  <h3 className="text-xs md:text-sm font-bold font-display leading-tight text-slate-800 dark:text-white mt-1">
-                    {resource.name}
-                  </h3>
-                  <p className="text-[10px] font-mono text-slate-400 mt-1">Format: {resource.format}</p>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
-                  <span className="text-[9px] font-mono text-emerald-600 font-bold">✓ Vetted Archive</span>
-                  
-                  {downloadingDoc === resource.name ? (
-                    <div className="text-[10px] font-mono text-emerald-600 text-right space-y-1">
-                      <span className="animate-pulse font-bold">Simulating... {downloadProgress}%</span>
-                      <div className="w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-600 transition-all duration-150" style={{ width: `${downloadProgress}%` }}></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => startDownloadSimulation(resource.name)}
-                      className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:underline"
-                    >
-                      <Download size={12} />
-                      Download
-                    </button>
-                  )}
                 </div>
               </div>
             ))}
@@ -1219,12 +811,16 @@ export default function Gallery({ highContrast }: GalleryProps) {
               </div>
 
               <div className="flex items-center gap-4 mt-8 pt-4 border-t border-slate-100 relative z-10">
-                <img 
-                  src={test.avatar} 
-                  alt={test.author} 
-                  className="w-12 h-12 rounded-full object-cover border border-emerald-500/20"
-                  referrerPolicy="no-referrer"
-                />
+                {test.avatar ? (
+                  <img 
+                    src={test.avatar} 
+                    alt={test.author} 
+                    className="w-12 h-12 rounded-full object-cover border border-emerald-500/20"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-slate-500">No Img</div>
+                )}
                 <div>
                   <h4 className="text-xs font-bold text-slate-800 dark:text-white font-display leading-tight">{test.author}</h4>
                   <p className="text-[10px] text-slate-400 font-mono mt-0.5">{test.role} • {test.location}</p>
@@ -1288,12 +884,16 @@ export default function Gallery({ highContrast }: GalleryProps) {
             { tag: "Environment", img: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=300" }
           ]).map((item, idx) => (
             <div key={idx} className="w-48 shrink-0 relative rounded-xl overflow-hidden aspect-video group">
-              <img 
-                src={item.img} 
-                alt={item.tag} 
-                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                referrerPolicy="no-referrer"
-              />
+              {item.img ? (
+                <img 
+                  src={item.img} 
+                  alt={item.tag} 
+                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500">No Image</div>
+              )}
               <div className="absolute inset-0 bg-slate-900/40 opacity-100 group-hover:opacity-70 transition-opacity"></div>
               <span className="absolute bottom-2 left-2 text-[8px] font-mono font-bold text-white uppercase bg-slate-900/80 px-2 py-0.5 rounded">
                 {item.tag}
@@ -1343,12 +943,16 @@ export default function Gallery({ highContrast }: GalleryProps) {
                   <X size={18} />
                 </button>
 
-                <img 
-                  src={activePhotoLightbox.image} 
-                  alt={activePhotoLightbox.title} 
-                  className="w-full h-auto max-h-[65vh] object-contain mx-auto"
-                  referrerPolicy="no-referrer"
-                />
+                {activePhotoLightbox.image ? (
+                  <img 
+                    src={activePhotoLightbox.image} 
+                    alt={activePhotoLightbox.title} 
+                    className="w-full h-auto max-h-[65vh] object-contain mx-auto"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-full h-64 flex items-center justify-center bg-slate-900 text-slate-500 text-sm">No Image</div>
+                )}
                 
                 <div className="p-6 bg-slate-900 text-left space-y-2">
                   <div className="flex justify-between items-start">
