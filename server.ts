@@ -19,74 +19,33 @@ const SEO_FILE = path.join(process.cwd(), 'seo.json');
 
 // ============================================
 // HELPER: Normalize image URLs for Vercel
+// Removes hardcoded localhost references
 // ============================================
 function normalizeImageUrl(url: string): string {
   if (!url) return url;
   // Remove any localhost:3000 or localhost references
-  let normalized = url.replace(/^https?:\/\/localhost(:\d+)?\//, '/');
-  // Also handle case where URL might be empty or just whitespace
-  if (!normalized || normalized.trim() === '') {
-    return 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000';
-  }
-  return normalized;
+  return url.replace(/^https?:\/\/localhost(:\d+)?\//, '/');
 }
 
 // ============================================
-// MIGRATION: Fix existing gallery URLs with logging
+// MIGRATION: Fix existing gallery URLs
 // ============================================
 function migrateGalleryUrls() {
-  console.log('🔍 Running gallery URL migration...');
   try {
     if (fs.existsSync(GALLERY_FILE)) {
-      console.log(`📁 Found gallery.json at: ${GALLERY_FILE}`);
       const data = fs.readFileSync(GALLERY_FILE, 'utf-8');
       const gallery = JSON.parse(data);
-      console.log(`📊 Gallery has ${gallery.length} items`);
-      
-      let migratedCount = 0;
-      const migrated = gallery.map((item: any) => {
-        const originalUrl = item.url || '';
-        const originalImage = item.image || '';
-        const newUrl = normalizeImageUrl(originalUrl);
-        const newImage = normalizeImageUrl(originalImage);
-        
-        if (originalUrl !== newUrl || originalImage !== newImage) {
-          migratedCount++;
-        }
-        
-        return {
-          ...item,
-          url: newUrl,
-          image: newImage
-        };
-      });
-      
+      const migrated = gallery.map((item: any) => ({
+        ...item,
+        url: normalizeImageUrl(item.url || ''),
+        image: normalizeImageUrl(item.image || '')
+      }));
       fs.writeFileSync(GALLERY_FILE, JSON.stringify(migrated, null, 2));
-      console.log(`✅ Gallery URLs migrated successfully! (${migratedCount} items updated)`);
-      
-      // Log sample of migrated URLs
-      if (migrated.length > 0) {
-        console.log('📸 Sample migrated URL:', migrated[0].url);
-      }
-    } else {
-      console.log('⚠️ gallery.json not found, creating default...');
-      fs.writeFileSync(GALLERY_FILE, JSON.stringify(DEFAULT_GALLERY, null, 2));
-      console.log('✅ Default gallery created');
+      console.log('✅ Gallery URLs migrated successfully');
     }
   } catch (err) {
-    console.error('❌ Failed to migrate gallery URLs:', err);
+    console.error('Failed to migrate gallery URLs:', err);
   }
-}
-
-// ============================================
-// FORCE FIX: Directly replace URLs in memory
-// ============================================
-function forceFixGalleryUrls(gallery: any[]): any[] {
-  return gallery.map((item: any) => ({
-    ...item,
-    url: normalizeImageUrl(item.url || ''),
-    image: normalizeImageUrl(item.image || '')
-  }));
 }
 
 const DEFAULT_GALLERY: any[] = [
@@ -204,30 +163,21 @@ const DEFAULT_GALLERY: any[] = [
 
 function getGallery() {
   try {
-    console.log('🔍 Reading gallery...');
     if (!fs.existsSync(GALLERY_FILE)) {
-      console.log('📁 gallery.json not found, creating default...');
       fs.writeFileSync(GALLERY_FILE, JSON.stringify(DEFAULT_GALLERY, null, 2));
       return DEFAULT_GALLERY;
     }
-    
     const data = fs.readFileSync(GALLERY_FILE, 'utf-8');
-    console.log(`📊 Raw gallery data length: ${data.length} characters`);
-    
     const parsed = JSON.parse(data);
-    console.log(`📊 Parsed gallery has ${parsed.length} items`);
-    
     if (Array.isArray(parsed)) {
-      // FORCE FIX: Normalize all image URLs
-      const normalized = forceFixGalleryUrls(parsed);
-      
-      // Log first URL for debugging
-      if (normalized.length > 0) {
-        console.log('📸 First gallery URL after fix:', normalized[0].url);
-      }
+      // Normalize all image URLs
+      const normalized = parsed.map((item: any) => ({
+        ...item,
+        url: normalizeImageUrl(item.url || ''),
+        image: normalizeImageUrl(item.image || '')
+      }));
       
       if (normalized.length < 5) {
-        console.log('⚠️ Gallery has less than 5 items, merging defaults...');
         const merged = [...normalized];
         for (const defItem of DEFAULT_GALLERY) {
           if (!merged.some(item => item.id === defItem.id)) {
@@ -240,28 +190,26 @@ function getGallery() {
         fs.writeFileSync(GALLERY_FILE, JSON.stringify(merged, null, 2));
         return merged;
       }
-      
-      // Save the normalized version back to disk
-      fs.writeFileSync(GALLERY_FILE, JSON.stringify(normalized, null, 2));
       return normalized;
     }
-    console.log('⚠️ Gallery data is not an array, returning default');
     return DEFAULT_GALLERY;
   } catch (err) {
-    console.error('❌ Error reading gallery:', err);
+    console.error('Error reading gallery:', err);
     return DEFAULT_GALLERY;
   }
 }
 
 function saveGallery(gallery: any[]) {
   try {
-    console.log(`💾 Saving gallery with ${gallery.length} items...`);
-    // FORCE FIX: Normalize URLs before saving
-    const normalized = forceFixGalleryUrls(gallery);
+    // Normalize URLs before saving
+    const normalized = gallery.map((item: any) => ({
+      ...item,
+      url: normalizeImageUrl(item.url || ''),
+      image: normalizeImageUrl(item.image || '')
+    }));
     fs.writeFileSync(GALLERY_FILE, JSON.stringify(normalized, null, 2));
-    console.log('✅ Gallery saved successfully');
   } catch (err) {
-    console.error('❌ Error writing gallery:', err);
+    console.error('Error writing gallery:', err);
   }
 }
 
@@ -391,9 +339,6 @@ function saveSeo(seo: any) {
 }
 
 async function startServer() {
-  console.log('🚀 Starting Raita Mitra Server...');
-  console.log(`📂 Current working directory: ${process.cwd()}`);
-  
   // ============================================
   // MIGRATE EXISTING GALLERY URLS ON STARTUP
   // ============================================
@@ -644,16 +589,8 @@ Respond strictly based on this. Let's do great things together.`;
     try {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       const gallery = getGallery();
-      
-      // Log what we're sending
-      console.log(`📤 Sending ${gallery.length} gallery items`);
-      if (gallery.length > 0) {
-        console.log('📸 First URL being sent:', gallery[0].url);
-      }
-      
       res.json(gallery);
     } catch (err: any) {
-      console.error('❌ Error in /api/gallery:', err);
       res.status(500).json({ error: 'Failed to retrieve gallery items', details: err.message });
     }
   });
