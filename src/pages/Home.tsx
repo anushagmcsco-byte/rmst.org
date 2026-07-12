@@ -330,13 +330,40 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
         if (Array.isArray(data) && data.length > 0) {
           handleLoadData(data);
         } else {
-          // If server is empty, fallback to fallback list
+          // Fallback to local storage if server is empty
+          const saved = localStorage.getItem('raita_mitra_gallery_list');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                handleLoadData(parsed);
+                // Heal server
+                fetch('/api/gallery', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ galleryList: parsed })
+                }).catch(err => console.error('Failed to sync/heal gallery to server from Home page:', err));
+                return;
+              }
+            } catch (e) {}
+          }
+          // Default fallback when server and local storage are both empty/unavailable (e.g. initial load on Vercel mobile)
           handleLoadData(STATIC_FALLBACK_GALLERY);
         }
       })
       .catch(err => {
-        console.warn('Failed to load home gallery from server:', err);
-        // Default fallback when server is unreachable
+        console.warn('Failed to load home gallery from server, fallback to local storage:', err);
+        const saved = localStorage.getItem('raita_mitra_gallery_list');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+              handleLoadData(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
+        // Default fallback when server is unreachable and local storage is empty
         handleLoadData(STATIC_FALLBACK_GALLERY);
       });
   }, []);
