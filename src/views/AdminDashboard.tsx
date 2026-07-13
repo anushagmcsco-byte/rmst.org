@@ -26,8 +26,8 @@ import { RICH_EVENTS } from '../data/events';
 interface AdminDashboardProps {
   highContrast: boolean;
   setActivePage?: (page: string) => void;
-  seoConfig?: Record<string, { title: string; description: string; futureImage: string }>;
-  setSeoConfig?: React.Dispatch<React.SetStateAction<Record<string, { title: string; description: string; futureImage: string }>>>;
+  seoConfig?: Record<string, any>;
+  setSeoConfig?: React.Dispatch<React.SetStateAction<Record<string, any>>>;
 }
 
 // ============================================================================
@@ -762,7 +762,8 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     detailedInfo: '',
     imageName: '',
     video: '',
-    videoName: ''
+    videoName: '',
+    status: 'Upcoming'
   });
 
   const [editingGallery, setEditingGallery] = useState<any | null>(null);
@@ -1704,7 +1705,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                             topic: 'Agriculture',
                             content: '',
                             author: adminUser.name,
-                            authorRole: adminUser.role
+                            authorRole: adminUser.role,
+                            image: '',
+                            imageName: '',
+                            video: '',
+                            videoName: ''
                           });
                         }}
                         className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
@@ -2093,7 +2098,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                             totalSeats: 50,
                             image: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600',
                             description: '',
-                            detailedInfo: ''
+                            detailedInfo: '',
+                            status: 'Upcoming',
+                            imageName: '',
+                            video: '',
+                            videoName: ''
                           });
                         }}
                         className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
@@ -2592,7 +2601,9 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                             tag1: 'Agriculture',
                             tag2: 'Haveri',
                             type: 'Image',
-                            size: '1.5 MB'
+                            size: '1.5 MB',
+                            imageName: '',
+                            videoName: ''
                           });
                         }}
                         className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-mono text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
@@ -3849,9 +3860,11 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                 segment: newDonorForm.segment,
                                 totalGiving: newDonorForm.totalGiving,
                                 score: newDonorForm.engagements,
+                                engagements: newDonorForm.engagements,
                                 recommended: newDonorForm.recommended,
                                 image: newDonorForm.image,
-                                video: newDonorForm.video
+                                video: newDonorForm.video,
+                                status: 'Active'
                               };
                               setDonorList([newDon, ...donorList]);
                               setIsCreatingDonor(false);
