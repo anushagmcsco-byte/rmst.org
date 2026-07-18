@@ -4,9 +4,35 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Firebase in server.ts
+let db: any = null;
+try {
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    const app = initializeApp({
+      apiKey: firebaseConfig.apiKey,
+      authDomain: firebaseConfig.authDomain,
+      projectId: firebaseConfig.projectId,
+      storageBucket: firebaseConfig.storageBucket,
+      messagingSenderId: firebaseConfig.messagingSenderId,
+      appId: firebaseConfig.appId,
+    });
+    const dbId = firebaseConfig.firestoreDatabaseId || undefined;
+    db = getFirestore(app, dbId);
+    console.log('Server initialized Firebase successfully with Database ID:', dbId);
+  } else {
+    console.warn('firebase-applet-config.json not found on server.');
+  }
+} catch (err) {
+  console.error('Failed to initialize Firebase on server:', err);
+}
 
 const SUBMISSIONS_FILE = path.join(process.cwd(), 'submissions.json');
 const CONFIG_FILE = path.join(process.cwd(), 'sheets_config.json');
@@ -134,7 +160,7 @@ const DEFAULT_GALLERY = [
   }
 ];
 
-function getGallery() {
+function localGetGallery() {
   try {
     if (!fs.existsSync(GALLERY_FILE)) {
       fs.writeFileSync(GALLERY_FILE, JSON.stringify(DEFAULT_GALLERY, null, 2));
@@ -171,7 +197,7 @@ function getGallery() {
   }
 }
 
-function saveGallery(gallery: any[]) {
+function localSaveGallery(gallery: any[]) {
   try {
     const normalized = gallery.map((item: any) => ({
       ...item,
@@ -184,7 +210,7 @@ function saveGallery(gallery: any[]) {
   }
 }
 
-function getSubmissions() {
+function localGetSubmissions() {
   try {
     if (!fs.existsSync(SUBMISSIONS_FILE)) {
       fs.writeFileSync(SUBMISSIONS_FILE, JSON.stringify([], null, 2));
@@ -198,7 +224,7 @@ function getSubmissions() {
   }
 }
 
-function saveSubmissions(submissions: any[]) {
+function localSaveSubmissions(submissions: any[]) {
   try {
     fs.writeFileSync(SUBMISSIONS_FILE, JSON.stringify(submissions, null, 2));
   } catch (err) {
@@ -229,7 +255,7 @@ function saveSheetsConfig(config: any) {
   }
 }
 
-function getBlogs() {
+function localGetBlogs() {
   try {
     if (!fs.existsSync(BLOGS_FILE)) return [];
     return JSON.parse(fs.readFileSync(BLOGS_FILE, 'utf-8'));
@@ -239,7 +265,7 @@ function getBlogs() {
   }
 }
 
-function saveBlogs(blogs: any[]) {
+function localSaveBlogs(blogs: any[]) {
   try {
     fs.writeFileSync(BLOGS_FILE, JSON.stringify(blogs, null, 2));
   } catch (err) {
@@ -247,7 +273,7 @@ function saveBlogs(blogs: any[]) {
   }
 }
 
-function getEvents() {
+function localGetEvents() {
   try {
     if (!fs.existsSync(EVENTS_FILE)) return [];
     return JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf-8'));
@@ -257,7 +283,7 @@ function getEvents() {
   }
 }
 
-function saveEvents(events: any[]) {
+function localSaveEvents(events: any[]) {
   try {
     fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2));
   } catch (err) {
@@ -265,7 +291,7 @@ function saveEvents(events: any[]) {
   }
 }
 
-function getJobs() {
+function localGetJobs() {
   try {
     if (!fs.existsSync(JOBS_FILE)) return [];
     return JSON.parse(fs.readFileSync(JOBS_FILE, 'utf-8'));
@@ -275,7 +301,7 @@ function getJobs() {
   }
 }
 
-function saveJobs(jobs: any[]) {
+function localSaveJobs(jobs: any[]) {
   try {
     fs.writeFileSync(JOBS_FILE, JSON.stringify(jobs, null, 2));
   } catch (err) {
@@ -283,7 +309,7 @@ function saveJobs(jobs: any[]) {
   }
 }
 
-function getSeo() {
+function localGetSeo() {
   try {
     if (!fs.existsSync(SEO_FILE)) return null;
     return JSON.parse(fs.readFileSync(SEO_FILE, 'utf-8'));
@@ -293,11 +319,198 @@ function getSeo() {
   }
 }
 
-function saveSeo(seo: any) {
+function localSaveSeo(seo: any) {
   try {
     fs.writeFileSync(SEO_FILE, JSON.stringify(seo, null, 2));
   } catch (err) {
     console.error('Error writing SEO config:', err);
+  }
+}
+
+// Firestore integrated functions
+async function getGallery() {
+  if (!db) return localGetGallery();
+  try {
+    const docRef = doc(db, 'cms', 'gallery');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && Array.isArray(data.items)) {
+        return data.items;
+      }
+    }
+    const fallback = localGetGallery();
+    await setDoc(docRef, { items: fallback });
+    return fallback;
+  } catch (err) {
+    console.error('Error loading gallery from Firestore:', err);
+    return localGetGallery();
+  }
+}
+
+async function saveGallery(gallery: any[]) {
+  localSaveGallery(gallery);
+  if (!db) return;
+  try {
+    const docRef = doc(db, 'cms', 'gallery');
+    await setDoc(docRef, { items: gallery });
+  } catch (err) {
+    console.error('Error saving gallery to Firestore:', err);
+  }
+}
+
+async function getSubmissions() {
+  if (!db) return localGetSubmissions();
+  try {
+    const docRef = doc(db, 'cms', 'submissions');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && Array.isArray(data.items)) {
+        return data.items;
+      }
+    }
+    const fallback = localGetSubmissions();
+    await setDoc(docRef, { items: fallback });
+    return fallback;
+  } catch (err) {
+    console.error('Error loading submissions from Firestore:', err);
+    return localGetSubmissions();
+  }
+}
+
+async function saveSubmissions(submissions: any[]) {
+  localSaveSubmissions(submissions);
+  if (!db) return;
+  try {
+    const docRef = doc(db, 'cms', 'submissions');
+    await setDoc(docRef, { items: submissions });
+  } catch (err) {
+    console.error('Error saving submissions to Firestore:', err);
+  }
+}
+
+async function getBlogs() {
+  if (!db) return localGetBlogs();
+  try {
+    const docRef = doc(db, 'cms', 'blogs');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && Array.isArray(data.items)) {
+        return data.items;
+      }
+    }
+    const fallback = localGetBlogs();
+    await setDoc(docRef, { items: fallback });
+    return fallback;
+  } catch (err) {
+    console.error('Error loading blogs from Firestore:', err);
+    return localGetBlogs();
+  }
+}
+
+async function saveBlogs(blogs: any[]) {
+  localSaveBlogs(blogs);
+  if (!db) return;
+  try {
+    const docRef = doc(db, 'cms', 'blogs');
+    await setDoc(docRef, { items: blogs });
+  } catch (err) {
+    console.error('Error saving blogs to Firestore:', err);
+  }
+}
+
+async function getEvents() {
+  if (!db) return localGetEvents();
+  try {
+    const docRef = doc(db, 'cms', 'events');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && Array.isArray(data.items)) {
+        return data.items;
+      }
+    }
+    const fallback = localGetEvents();
+    await setDoc(docRef, { items: fallback });
+    return fallback;
+  } catch (err) {
+    console.error('Error loading events from Firestore:', err);
+    return localGetEvents();
+  }
+}
+
+async function saveEvents(events: any[]) {
+  localSaveEvents(events);
+  if (!db) return;
+  try {
+    const docRef = doc(db, 'cms', 'events');
+    await setDoc(docRef, { items: events });
+  } catch (err) {
+    console.error('Error saving events to Firestore:', err);
+  }
+}
+
+async function getJobs() {
+  if (!db) return localGetJobs();
+  try {
+    const docRef = doc(db, 'cms', 'jobs');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && Array.isArray(data.items)) {
+        return data.items;
+      }
+    }
+    const fallback = localGetJobs();
+    await setDoc(docRef, { items: fallback });
+    return fallback;
+  } catch (err) {
+    console.error('Error loading jobs from Firestore:', err);
+    return localGetJobs();
+  }
+}
+
+async function saveJobs(jobs: any[]) {
+  localSaveJobs(jobs);
+  if (!db) return;
+  try {
+    const docRef = doc(db, 'cms', 'jobs');
+    await setDoc(docRef, { items: jobs });
+  } catch (err) {
+    console.error('Error saving jobs to Firestore:', err);
+  }
+}
+
+async function getSeo() {
+  if (!db) return localGetSeo();
+  try {
+    const docRef = doc(db, 'cms', 'seo');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && data.items) {
+        return data.items;
+      }
+    }
+    const fallback = localGetSeo() || {};
+    await setDoc(docRef, { items: fallback });
+    return fallback;
+  } catch (err) {
+    console.error('Error loading SEO from Firestore:', err);
+    return localGetSeo();
+  }
+}
+
+async function saveSeo(seo: any) {
+  localSaveSeo(seo);
+  if (!db) return;
+  try {
+    const docRef = doc(db, 'cms', 'seo');
+    await setDoc(docRef, { items: seo });
+  } catch (err) {
+    console.error('Error saving SEO to Firestore:', err);
   }
 }
 
@@ -395,8 +608,8 @@ app.post('/api/sheets-config', (req, res) => {
   res.json({ success: true, config });
 });
 
-app.get('/api/submissions', (req, res) => {
-  res.json(getSubmissions());
+app.get('/api/submissions', async (req, res) => {
+  res.json(await getSubmissions());
 });
 
 app.post('/api/submissions', async (req, res) => {
@@ -459,9 +672,9 @@ app.post('/api/submissions', async (req, res) => {
   newSubmission.googleSheetsSynced = googleSheetsSynced;
   newSubmission.syncError = syncError;
 
-  const submissions = getSubmissions();
+  const submissions = await getSubmissions();
   submissions.unshift(newSubmission);
-  saveSubmissions(submissions);
+  await saveSubmissions(submissions);
 
   res.json({
     success: true,
@@ -471,77 +684,77 @@ app.post('/api/submissions', async (req, res) => {
   });
 });
 
-app.post('/api/submissions/clear', (req, res) => {
-  saveSubmissions([]);
+app.post('/api/submissions/clear', async (req, res) => {
+  await saveSubmissions([]);
   res.json({ success: true, message: 'Submissions cleared successfully' });
 });
 
-app.get('/api/gallery', (req, res) => {
-  res.json(getGallery());
+app.get('/api/gallery', async (req, res) => {
+  res.json(await getGallery());
 });
 
-app.post('/api/gallery', (req, res) => {
+app.post('/api/gallery', async (req, res) => {
   const { galleryList } = req.body;
   if (!galleryList || !Array.isArray(galleryList)) {
     return res.status(400).json({ error: 'galleryList must be a valid array' });
   }
-  saveGallery(galleryList);
+  await saveGallery(galleryList);
   res.json({ success: true, galleryList });
 });
 
-app.get('/api/blogs', (req, res) => {
-  res.json(getBlogs());
+app.get('/api/blogs', async (req, res) => {
+  res.json(await getBlogs());
 });
 
-app.post('/api/blogs', (req, res) => {
+app.post('/api/blogs', async (req, res) => {
   const { blogsList } = req.body;
   if (!blogsList || !Array.isArray(blogsList)) {
     return res.status(400).json({ error: 'blogsList must be a valid array' });
   }
-  saveBlogs(blogsList);
+  await saveBlogs(blogsList);
   res.json({ success: true, blogsList });
 });
 
-app.get('/api/events', (req, res) => {
-  res.json(getEvents());
+app.get('/api/events', async (req, res) => {
+  res.json(await getEvents());
 });
 
-app.post('/api/events', (req, res) => {
+app.post('/api/events', async (req, res) => {
   const { eventsList } = req.body;
   if (!eventsList || !Array.isArray(eventsList)) {
     return res.status(400).json({ error: 'eventsList must be a valid array' });
   }
-  saveEvents(eventsList);
+  await saveEvents(eventsList);
   res.json({ success: true, eventsList });
 });
 
-app.get('/api/jobs', (req, res) => {
-  res.json(getJobs());
+app.get('/api/jobs', async (req, res) => {
+  res.json(await getJobs());
 });
 
-app.post('/api/jobs', (req, res) => {
+app.post('/api/jobs', async (req, res) => {
   const { jobsList } = req.body;
   if (!jobsList || !Array.isArray(jobsList)) {
     return res.status(400).json({ error: 'jobsList must be a valid array' });
   }
-  saveJobs(jobsList);
+  await saveJobs(jobsList);
   res.json({ success: true, jobsList });
 });
 
-app.get('/api/seo', (req, res) => {
-  res.json(getSeo() || {});
+app.get('/api/seo', async (req, res) => {
+  res.json(await getSeo() || {});
 });
 
-app.post('/api/seo', (req, res) => {
+app.post('/api/seo', async (req, res) => {
   const { seoConfig } = req.body;
   if (!seoConfig || typeof seoConfig !== 'object') {
     return res.status(400).json({ error: 'seoConfig must be a valid object' });
   }
-  saveSeo(seoConfig);
+  await saveSeo(seoConfig);
   res.json({ success: true, seoConfig });
 });
 
-app.post('/api/upload', (req, res) => {
+app.post('/api/upload', async (req, res) => {
   const { base64, name } = req.body;
   if (!base64 || typeof base64 !== 'string') {
     return res.status(400).json({ error: 'base64 data is required' });
@@ -550,9 +763,10 @@ app.post('/api/upload', (req, res) => {
   const matches = base64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
   let buffer: Buffer;
   let extension = 'png';
+  let mimeType = 'image/png';
 
   if (matches && matches.length === 3) {
-    const mimeType = matches[1];
+    mimeType = matches[1];
     buffer = Buffer.from(matches[2], 'base64');
     const extMatch = mimeType.split('/');
     if (extMatch && extMatch[1]) {
@@ -572,18 +786,86 @@ app.post('/api/upload', (req, res) => {
     }
   }
 
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+  const filename = `upload_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${extension}`;
+
+  // 1. Try storing in Firestore if database is active
+  if (db) {
+    try {
+      await setDoc(doc(db, 'uploads', filename), {
+        base64,
+        mimeType,
+        createdAt: new Date().toISOString()
+      });
+      console.log(`Saved uploaded file ${filename} to Firestore uploads collection.`);
+    } catch (err) {
+      console.error(`Failed to save ${filename} to Firestore:`, err);
+    }
   }
 
-  const filename = `upload_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${extension}`;
-  const filepath = path.join(uploadsDir, filename);
-
-  fs.writeFileSync(filepath, buffer);
+  // 2. Also save to local disk as fallback / local dev support
+  try {
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    const filepath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filepath, buffer);
+  } catch (err) {
+    console.error('Failed to write file to local disk (ignoring since cloud storage attempted):', err);
+  }
   
-  const fileUrl = `/uploads/${filename}`;
+  const fileUrl = `/api/uploads/${filename}`;
   res.json({ success: true, url: fileUrl });
+});
+
+app.get('/api/uploads/:filename', async (req, res) => {
+  const { filename } = req.params;
+  
+  // 1. Try serving from Firestore
+  if (db) {
+    try {
+      const docRef = doc(db, 'uploads', filename);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data && data.base64) {
+          const base64Str = data.base64;
+          const mimeType = data.mimeType || 'image/png';
+          const base64Data = base64Str.includes(';base64,') 
+            ? base64Str.split(';base64,')[1] 
+            : base64Str;
+          const buffer = Buffer.from(base64Data, 'base64');
+          res.setHeader('Content-Type', mimeType);
+          res.setHeader('Cache-Control', 'public, max-age=31536000');
+          return res.send(buffer);
+        }
+      }
+    } catch (err) {
+      console.error(`Error loading upload ${filename} from Firestore:`, err);
+    }
+  }
+
+  // 2. Fallback to local files
+  try {
+    const filepath = path.join(process.cwd(), 'public', 'uploads', filename);
+    if (fs.existsSync(filepath)) {
+      const ext = path.extname(filename).toLowerCase().replace('.', '');
+      let mimeType = 'image/png';
+      if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+      else if (ext === 'gif') mimeType = 'image/gif';
+      else if (ext === 'svg') mimeType = 'image/svg+xml';
+      else if (ext === 'webp') mimeType = 'image/webp';
+      else if (ext === 'mp4') mimeType = 'video/mp4';
+      
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      return res.sendFile(filepath);
+    }
+  } catch (err) {
+    console.error('Error handling local file serving:', err);
+  }
+
+  res.status(404).send('Not Found');
 });
 
 app.post('/api/chat', async (req, res) => {

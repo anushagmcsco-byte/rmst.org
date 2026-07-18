@@ -161,16 +161,35 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
   const uploadMediaToServer = async (base64Url: string, name: string): Promise<string> => {
     try {
       const compressedBase64 = await compressImage(base64Url);
-      const response = await fetch(compressedBase64);
-      const blob = await response.blob();
-      const storageRef = ref(storage, `gallery/${Date.now()}_${name}`);
-      const snapshot = await uploadBytes(storageRef, blob);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: compressedBase64, name })
+      });
+      const data = await response.json();
+      if (data.success && data.url) {
+        return data.url;
+      }
+      throw new Error(data.error || 'Backend uploads API returned error');
     } catch (err) {
-      console.error('Failed to upload file to Firebase Storage:', err);
-      // Fallback
-      return base64Url;
+      console.warn('Failed to upload file to backend, trying Firebase Storage as fallback:', err);
+      try {
+        const compressedBase64 = await compressImage(base64Url);
+        const response = await fetch(compressedBase64);
+        const blob = await response.blob();
+        const storageRef = ref(storage, `gallery/${Date.now()}_${name}`);
+        const snapshot = await uploadBytes(storageRef, blob);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+      } catch (storageErr) {
+        console.error('Failed to upload file to Firebase Storage as well:', storageErr);
+        // Fallback to compressed base64 if both fail
+        try {
+          return await compressImage(base64Url);
+        } catch (compErr) {
+          return base64Url;
+        }
+      }
     }
   };
 
@@ -384,16 +403,20 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
     return RICH_EVENTS;
   });
 
-  const [galleryList, setGalleryList] = useState<any[]>([]);
+  const [galleryList, setGalleryList] = useState<any[]>(() => {
+    const saved = localStorage.getItem('raita_mitra_gallery_list');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (e) { console.error(e); }
+    }
+    return [];
+  });
 
-  useEffect(() => {
-    const q = query(collection(db, 'gallery'), orderBy('timestamp', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setGalleryList(items);
-    });
-    return () => unsubscribe();
-  }, []);
+  const [adminGalleryFilter, setAdminGalleryFilter] = useState<string>('All');
 
   // Load blogs list from server on mount with self-healing
   useEffect(() => {
@@ -1493,10 +1516,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingCms) {
-                                            setNewCmsForm({ ...newCmsForm, image: base64Url, imageName: file.name });
+                                            setNewCmsForm(prev => ({ ...prev, image: '', imageName: 'Uploading...' }));
                                           } else {
-                                            setEditingCms({ ...editingCms, image: base64Url, imageName: file.name });
+                                            setEditingCms(prev => ({ ...prev, image: '', imageName: 'Uploading...' }));
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingCms) {
+                                              setNewCmsForm(prev => ({ ...prev, image: url, imageName: file.name }));
+                                            } else {
+                                              setEditingCms(prev => ({ ...prev, image: url, imageName: file.name }));
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -1522,10 +1552,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingCms) {
-                                            setNewCmsForm({ ...newCmsForm, video: base64Url, videoName: file.name });
+                                            setNewCmsForm(prev => ({ ...prev, video: '', videoName: 'Uploading...' }));
                                           } else {
-                                            setEditingCms({ ...editingCms, video: base64Url, videoName: file.name });
+                                            setEditingCms(prev => ({ ...prev, video: '', videoName: 'Uploading...' }));
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingCms) {
+                                              setNewCmsForm(prev => ({ ...prev, video: url, videoName: file.name }));
+                                            } else {
+                                              setEditingCms(prev => ({ ...prev, video: url, videoName: file.name }));
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -2598,7 +2635,7 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                           setNewGalleryForm({
                             title: '',
                             url: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600',
-                            tag1: 'Agriculture',
+                            tag1: adminGalleryFilter !== 'All' ? adminGalleryFilter : 'Agriculture',
                             tag2: 'Haveri',
                             type: 'Image',
                             size: '1.5 MB',
@@ -2883,35 +2920,29 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                           onClick={async () => {
                             if (isCreatingGallery) {
                               const newAsset = {
+                                id: `gallery_asset_${Date.now()}`,
                                 title: newGalleryForm.title || 'Untitled Asset',
                                 tags: [newGalleryForm.tag1, newGalleryForm.tag2],
                                 type: newGalleryForm.type,
                                 size: newGalleryForm.size,
                                 url: newGalleryForm.url,
-                                timestamp: serverTimestamp()
+                                date: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+                                photographer: 'RMST Staff',
+                                desc: 'Visual documentation of our ongoing rural outreach programs.'
                               };
-                              try {
-                                await addDoc(collection(db, 'gallery'), newAsset);
-                                setIsCreatingGallery(false);
-                              } catch (error) {
-                                console.error("Error adding document: ", error);
-                                alert("Failed to add document. Please check the console for details.");
-                              }
+                              setGalleryList(prev => [newAsset, ...prev]);
+                              setIsCreatingGallery(false);
                             } else {
-                              try {
-                                const assetRef = doc(db, 'gallery', editingGallery.id);
-                                await updateDoc(assetRef, {
-                                  title: editingGallery.title,
-                                  tags: editingGallery.tags,
-                                  type: editingGallery.type,
-                                  size: editingGallery.size,
-                                  url: editingGallery.url
-                                });
-                                setEditingGallery(null);
-                              } catch (error) {
-                                console.error("Error updating document: ", error);
-                                alert("Failed to update document. Please check the console for details.");
-                              }
+                              const updatedAsset = {
+                                ...editingGallery,
+                                title: editingGallery.title,
+                                tags: editingGallery.tags,
+                                type: editingGallery.type,
+                                size: editingGallery.size,
+                                url: editingGallery.url
+                              };
+                              setGalleryList(prev => prev.map(item => item.id === editingGallery.id ? updatedAsset : item));
+                              setEditingGallery(null);
                             }
                           }}
                           className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold cursor-pointer"
@@ -2921,57 +2952,91 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                       </div>
                     </div>
                   ) : (
-                    /* Gallery Grid List */
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 font-sans">
-                      {galleryList.map((asset) => (
-                        <div key={asset.id} className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm flex flex-col justify-between group relative animate-fade-in">
-                          <div>
-                            {asset.url ? (
-                              <img src={asset.url} alt={asset.title} className="w-full h-40 object-cover" />
-                            ) : (
-                              <div className="w-full h-40 bg-slate-100 flex items-center justify-center text-xs text-slate-400">No Image</div>
-                            )}
-                            <div className="p-4 space-y-1.5 text-left">
-                              <h5 className="text-xs font-black text-slate-800 leading-tight">{asset.title}</h5>
-                              <div className="flex flex-wrap gap-1">
-                                {asset.tags?.map((t: string) => (
-                                  <span key={t} className="bg-slate-100 text-slate-500 text-[9px] px-1.5 rounded font-mono font-bold">
-                                    #{t}
-                                  </span>
-                                ))}
+                    /* Gallery Grid List with Tab-Wise Filtering */
+                    <div className="space-y-6">
+                      {/* Admin Gallery Tabs */}
+                      <div className="flex flex-wrap gap-1.5 pb-2 border-b border-slate-100">
+                        {['All', 'Agriculture', 'Women Empowerment', 'Education & AI Skills', 'Health Camps', 'Environment', 'Entrepreneurship', 'Events'].map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => setAdminGalleryFilter(cat)}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                              adminGalleryFilter === cat
+                                ? 'bg-amber-600 border-amber-600 text-white shadow-sm shadow-amber-600/15'
+                                : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 font-sans">
+                        {galleryList
+                          .filter((asset) => {
+                            if (adminGalleryFilter === 'All') return true;
+                            const mainTag = asset.tags?.[0] || 'Agriculture';
+                            return mainTag.toLowerCase() === adminGalleryFilter.toLowerCase();
+                          })
+                          .map((asset) => (
+                            <div key={asset.id} className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm flex flex-col justify-between group relative animate-fade-in">
+                              <div>
+                                {asset.url ? (
+                                  <img src={asset.url} alt={asset.title} className="w-full h-40 object-cover" />
+                                ) : (
+                                  <div className="w-full h-40 bg-slate-100 flex items-center justify-center text-xs text-slate-400">No Image</div>
+                                )}
+                                <div className="p-4 space-y-1.5 text-left">
+                                  <h5 className="text-xs font-black text-slate-800 leading-tight">{asset.title}</h5>
+                                  <div className="flex flex-wrap gap-1">
+                                    {asset.tags?.map((t: string) => (
+                                      <span key={t} className="bg-slate-100 text-slate-500 text-[9px] px-1.5 rounded font-mono font-bold">
+                                        #{t}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="p-4 pt-0 flex justify-between items-center border-t border-slate-100 mt-2 font-mono text-[10px]">
+                                <span className="text-slate-400">{asset.size || '2.0 MB'}</span>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingGallery(asset);
+                                      setIsCreatingGallery(false);
+                                    }}
+                                    className="text-amber-600 hover:text-amber-800 font-bold font-mono cursor-pointer"
+                                  >
+                                    [Edit]
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      triggerConfirm(
+                                        'Delete Gallery Asset',
+                                        `Are you sure you want to delete the asset: "${asset.title}"? This will immediately remove it from the live gallery page.`,
+                                        async () => {
+                                          setGalleryList(prev => prev.filter(item => item.id !== asset.id));
+                                        }
+                                      );
+                                    }}
+                                    className="text-rose-500 hover:text-rose-700 font-bold font-mono cursor-pointer"
+                                  >
+                                    [Delete]
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="p-4 pt-0 flex justify-between items-center border-t border-slate-100 mt-2 font-mono text-[10px]">
-                            <span className="text-slate-400">{asset.size || '2.0 MB'}</span>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  setEditingGallery(asset);
-                                  setIsCreatingGallery(false);
-                                }}
-                                className="text-amber-600 hover:text-amber-800 font-bold font-mono cursor-pointer"
-                              >
-                                [Edit]
-                              </button>
-                              <button
-                                onClick={() => {
-                                  triggerConfirm(
-                                    'Delete Gallery Asset',
-                                    `Are you sure you want to delete the asset: "${asset.title}"? This will immediately remove it from the live gallery page.`,
-                                    async () => {
-                                      await deleteDoc(doc(db, 'gallery', asset.id));
-                                    }
-                                  );
-                                }}
-                                className="text-rose-500 hover:text-rose-700 font-bold font-mono cursor-pointer"
-                              >
-                                [Delete]
-                              </button>
-                            </div>
-                          </div>
+                          ))}
+                      </div>
+                      {galleryList.filter((asset) => {
+                        if (adminGalleryFilter === 'All') return true;
+                        const mainTag = asset.tags?.[0] || 'Agriculture';
+                        return mainTag.toLowerCase() === adminGalleryFilter.toLowerCase();
+                      }).length === 0 && (
+                        <div className="text-center py-12 text-slate-400 font-mono text-xs border border-dashed rounded-2xl bg-slate-50">
+                          No assets found in this tab. Click "ADD GALLERY ASSET" above to add one!
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
                 </div>
@@ -3106,15 +3171,27 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                             reader.onloadend = () => {
                                               const base64Url = reader.result as string;
                                               if (setSeoConfig && seoConfig) {
-                                                setSeoConfig({
-                                                  ...seoConfig,
+                                                setSeoConfig(prev => !prev ? null : ({
+                                                  ...prev,
                                                   [pageKey]: {
-                                                    ...details,
-                                                    futureImage: base64Url,
-                                                    imageName: file.name
+                                                    ...prev[pageKey],
+                                                    futureImage: '',
+                                                    imageName: 'Uploading...'
                                                   }
-                                                });
+                                                }));
                                               }
+                                              uploadMediaToServer(base64Url, file.name).then(url => {
+                                                if (setSeoConfig && seoConfig) {
+                                                  setSeoConfig(prev => !prev ? null : ({
+                                                    ...prev,
+                                                    [pageKey]: {
+                                                      ...prev[pageKey],
+                                                      futureImage: url,
+                                                      imageName: file.name
+                                                    }
+                                                  }));
+                                                }
+                                              });
                                             };
                                             reader.readAsDataURL(file);
                                           }
@@ -3140,15 +3217,27 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                             reader.onloadend = () => {
                                               const base64Url = reader.result as string;
                                               if (setSeoConfig && seoConfig) {
-                                                setSeoConfig({
-                                                  ...seoConfig,
+                                                setSeoConfig(prev => !prev ? null : ({
+                                                  ...prev,
                                                   [pageKey]: {
-                                                    ...details,
-                                                    futureVideo: base64Url,
-                                                    videoName: file.name
+                                                    ...prev[pageKey],
+                                                    futureVideo: '',
+                                                    videoName: 'Uploading...'
                                                   }
-                                                });
+                                                }));
                                               }
+                                              uploadMediaToServer(base64Url, file.name).then(url => {
+                                                if (setSeoConfig && seoConfig) {
+                                                  setSeoConfig(prev => !prev ? null : ({
+                                                    ...prev,
+                                                    [pageKey]: {
+                                                      ...prev[pageKey],
+                                                      futureVideo: url,
+                                                      videoName: file.name
+                                                    }
+                                                  }));
+                                                }
+                                              });
                                             };
                                             reader.readAsDataURL(file);
                                           }
@@ -3383,10 +3472,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingProgram) {
-                                            setNewProgramForm({ ...newProgramForm, image: base64Url, imageName: file.name });
+                                            setNewProgramForm(prev => ({ ...prev, image: '', imageName: 'Uploading...' }));
                                           } else {
-                                            setEditingProgram({ ...editingProgram, image: base64Url, imageName: file.name });
+                                            setEditingProgram(prev => ({ ...prev, image: '', imageName: 'Uploading...' }));
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingProgram) {
+                                              setNewProgramForm(prev => ({ ...prev, image: url, imageName: file.name }));
+                                            } else {
+                                              setEditingProgram(prev => ({ ...prev, image: url, imageName: file.name }));
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -3412,10 +3508,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingProgram) {
-                                            setNewProgramForm({ ...newProgramForm, video: base64Url, videoName: file.name });
+                                            setNewProgramForm(prev => ({ ...prev, video: '', videoName: 'Uploading...' }));
                                           } else {
-                                            setEditingProgram({ ...editingProgram, video: base64Url, videoName: file.name });
+                                            setEditingProgram(prev => ({ ...prev, video: '', videoName: 'Uploading...' }));
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingProgram) {
+                                              setNewProgramForm(prev => ({ ...prev, video: url, videoName: file.name }));
+                                            } else {
+                                              setEditingProgram(prev => ({ ...prev, video: url, videoName: file.name }));
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -4166,10 +4269,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingVolunteer) {
-                                            setNewVolunteerForm({ ...newVolunteerForm, image: base64Url, imageName: file.name });
+                                            setNewVolunteerForm(prev => ({ ...prev, image: '', imageName: 'Uploading...' }));
                                           } else {
-                                            setEditingVolunteer({ ...editingVolunteer, image: base64Url, imageName: file.name });
+                                            setEditingVolunteer(prev => ({ ...prev, image: '', imageName: 'Uploading...' }));
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingVolunteer) {
+                                              setNewVolunteerForm(prev => ({ ...prev, image: url, imageName: file.name }));
+                                            } else {
+                                              setEditingVolunteer(prev => ({ ...prev, image: url, imageName: file.name }));
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }
@@ -4195,10 +4305,17 @@ export default function AdminDashboard({ highContrast, setActivePage, seoConfig,
                                         reader.onloadend = () => {
                                           const base64Url = reader.result as string;
                                           if (isCreatingVolunteer) {
-                                            setNewVolunteerForm({ ...newVolunteerForm, video: base64Url, videoName: file.name });
+                                            setNewVolunteerForm(prev => ({ ...prev, video: '', videoName: 'Uploading...' }));
                                           } else {
-                                            setEditingVolunteer({ ...editingVolunteer, video: base64Url, videoName: file.name });
+                                            setEditingVolunteer(prev => ({ ...prev, video: '', videoName: 'Uploading...' }));
                                           }
+                                          uploadMediaToServer(base64Url, file.name).then(url => {
+                                            if (isCreatingVolunteer) {
+                                              setNewVolunteerForm(prev => ({ ...prev, video: url, videoName: file.name }));
+                                            } else {
+                                              setEditingVolunteer(prev => ({ ...prev, video: url, videoName: file.name }));
+                                            }
+                                          });
                                         };
                                         reader.readAsDataURL(file);
                                       }

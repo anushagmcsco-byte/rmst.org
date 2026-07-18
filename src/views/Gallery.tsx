@@ -361,13 +361,11 @@ export default function Gallery({ highContrast }: GalleryProps) {
   // Dynamic gallery list from server
   const [dynamicGallery, setDynamicGallery] = useState<PhotoItem[]>([]);
 
-  // Load from Firestore
+  // Load from server
   useEffect(() => {
-    const q = query(collection(db, 'gallery'), orderBy('timestamp', 'desc'));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const items = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        const tags = data.tags || [];
+    const handleGalleryData = (data: any[]) => {
+      const items = data.map((item: any, idx: number) => {
+        const tags = item.tags || [];
         const tag = (tags[0] || 'Agriculture').toLowerCase();
         
         let category = 'Agriculture';
@@ -388,21 +386,47 @@ export default function Gallery({ highContrast }: GalleryProps) {
         }
         
         return {
-          id: doc.id,
+          id: item.id || `gallery_photo_${idx}`,
           category,
-          title: data.title || 'Untitled',
-          image: data.url || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
+          title: item.title || 'Untitled',
+          image: item.url || item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=1000',
           location: tags[1] || 'Haveri',
-          date: data.date || 'June 2026',
-          photographer: data.photographer || 'RMST Staff',
-          desc: data.desc || 'Visual documentation of our ongoing rural outreach programs.'
+          date: item.date || 'June 2026',
+          photographer: item.photographer || 'RMST Staff',
+          desc: item.desc || 'Visual documentation of our ongoing rural outreach programs.'
         };
       });
       setDynamicGallery(items);
-    }, (err) => {
-      console.error('Error fetching gallery from Firestore:', err);
-    });
-    return () => unsubscribe();
+    };
+
+    fetch('/api/gallery')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          handleGalleryData(data);
+          localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+        } else {
+          throw new Error('Empty gallery returned');
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to load gallery from server, falling back to local storage:', err);
+        const saved = localStorage.getItem('raita_mitra_gallery_list');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              handleGalleryData(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
+        // Fallback to empty to let UI render
+        handleGalleryData([]);
+      });
   }, []);
 
   // Navigation & Scroll to top

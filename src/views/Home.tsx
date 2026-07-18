@@ -294,13 +294,7 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
 
   // Fetch gallery list from server on mount with local storage fallback and self-healing
   useEffect(() => {
-    const q = query(collection(db, 'gallery'), orderBy('timestamp', 'desc'));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const data = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
+    const handleGalleryData = (data: any[]) => {
       const formatted = data.map((item: any, idx: number) => {
         const tags = item.tags || [];
         const tag = (tags[0] || 'Agriculture').toLowerCase();
@@ -313,6 +307,10 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
           category = 'climate';
         } else if (tag.includes('health') || tag.includes('camp') || tag.includes('clinic')) {
           category = 'health';
+        } else if (tag.includes('entrepreneur') || tag.includes('entrepreneurship')) {
+          category = 'entrepreneurship';
+        } else if (tag.includes('event')) {
+          category = 'events';
         }
         return {
           id: item.id || `home_photo_${idx}`,
@@ -322,11 +320,36 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
         };
       });
       setGalleryImages(formatted);
-    }, (err) => {
-      console.error('Error fetching home gallery from Firestore:', err);
-    });
+    };
 
-    return () => unsubscribe();
+    fetch('/api/gallery')
+      .then(res => {
+        if (!res.ok) throw new Error('API response not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          handleGalleryData(data);
+          localStorage.setItem('raita_mitra_gallery_list', JSON.stringify(data));
+        } else {
+          throw new Error('Empty gallery returned');
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to load gallery from server, falling back to local storage:', err);
+        const saved = localStorage.getItem('raita_mitra_gallery_list');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              handleGalleryData(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
+        // Fallback to empty to let the UI render
+        handleGalleryData([]);
+      });
   }, []);
 
   const filteredGallery = activeGalleryTab === 'all' 
@@ -1042,7 +1065,9 @@ export default function Home({ setActivePage, highContrast }: HomeProps) {
                 { label: 'Women SHGs', id: 'women' },
                 { label: 'Skill Labs', id: 'education' },
                 { label: 'Eco-Climate', id: 'climate' },
-                { label: 'Health Camps', id: 'health' }
+                { label: 'Health Camps', id: 'health' },
+                { label: 'Entrepreneurship', id: 'entrepreneurship' },
+                { label: 'Events', id: 'events' }
               ].map((tab) => (
                 <button
                   key={tab.id}
